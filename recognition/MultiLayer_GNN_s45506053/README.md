@@ -105,12 +105,16 @@ Specification-derived checklist txt file.
 
 Adapted the course-linked data source approach to data file preparation, to
 inform the prepare_facebook_data<br>compatibility script for converting the
-source data to the same schema used in PyG examples.
-<br>Produced a 'terminal py script' to obtain correct source data types for
-type annotations.
+source data to the same schema used in PyG examples.<br>
+Produced a 'terminal py script' command to obtain the correct source data types
+for type annotations, within<br>the project code.
 
-Ensured correctness of progressive README updates Markdown formatting,
-prior to subsequent editing by myself.
+Provided cast and assertion suggestions that were adapted for
+add_stratified_masks, to allow for the resolution<br>of IDE type-checker
+warnings, without compromising on the project's 'rigorous' typing conventions.
+
+Ensured correctness of the Markdown formatting 'syntax' for my progressive
+README updates, prior to the<br>final refinements by myself.
 
 ## 12. References
 
