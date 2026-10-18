@@ -1,6 +1,6 @@
 # Multi-Layer GNN for Facebook Page Classification
 ## COMP3710 Working Prototype Project in the Era of Artificial Intelligence
-### Derek McKinney (dm-uq)
+### Derek McKinney (dm-uq), SN: 45506053
 
 ## 1. Project Overview
 ### 1.1 Problem and Intended User
@@ -16,6 +16,7 @@
 ### 2.6 Next Planned Experiment
 
 ## 3. Data and Experimental Protocol
+
 ### 3.1 Facebook Large Page-Page Network
 
 The project uses the Facebook Large Page-Page Network provided through the
@@ -29,7 +30,52 @@ single graph for<br>semi-supervised node classification. Dataset provenance and
 the corresponding PyG resources are<br>listed in the References section.
 
 ### 3.2 Graph Representation and Features
+
+The dataset is represented as a single PyG `Data` graph containing 22,470
+nodes, 342,004 stored<br>edge entries, 128 features per node, and one class
+label per node.<br>
+After compatibility conversion and loading by PyG, the core dataset tensors
+(before experiment-<br>specific masks are added) have shapes:
+
+- `x`: `[22470, 128]`
+- `edge_index`: `[2, 342004]`
+- `y`: `[22470]`
+
+The graph is undirected, includes self-loops, and contains no isolated nodes.
+<br>The supplied node features are stored as 128-dimensional dense
+floating-point values, derived from<br>a higher-dimensional sparse bag-of-words
+description representation using truncated SVD.
+
+Inspection of the feature matrix gave a mean of approximately 0.0103 and
+standard deviation of<br>0.2551, with values ranging from approximately -2.04
+to 3.00. No zero-valued feature entries were<br>observed.<br>
+Given that the supplied features are already a transformed dense
+representation, additional row<br>normalisation was not presumed to be a
+required preprocessing step.
+
 ### 3.3 Data Audit and Class Distribution
+
+The four node classes are moderately imbalanced but all are well represented:
+
+| Class           | Nodes | Proportion |
+|-----------------|------:|-----------:|
+| Television show | 6,495 |     28.90% |
+| Government      | 6,880 |     30.62% |
+| Company         | 5,768 |     25.67% |
+| Politician      | 3,327 |     14.81% |
+
+No missing class labels were observed.
+
+Node degree is strongly right-skewed. The observed minimum degree was 1, the
+median was 7, the<br>mean was approximately 15.22, and the maximum was 709.
+This indicates that most pages have<br>relatively modest connectivity while a
+smaller number of highly connected nodes form a long upper tail.
+
+Edge homophily was approximately 0.8854, indicating that connected nodes very
+frequently share the<br>same class label. This provides an initial empirical
+reason to expect that graph structure may contain<br>useful classification
+information beyond the node features alone.
+
 ### 3.4 Pre-processing
 
 The original Assignment-Specification-prescribed PyG `FacebookPagePage`
@@ -45,18 +91,105 @@ and<br>then converted to the schema expected by the current PyG loader:
 No feature values, labels, or graph topology were otherwise modified.
 
 ### 3.5 Transductive / Inductive Setting
+
+An inductive node-classification setting aims to learn a mapping that can be
+applied to nodes not<br>present during training. In contrast, transductive
+classification infers labels for nodes already<br>contained within the observed
+graph, allowing information from unlabelled nodes to contribute to<br>the task.
+
+This project uses the latter setting. The complete Facebook graph remains
+available during training,<br>including the features and connectivity of nodes
+assigned to the training, validation, and test splits.<br>The masks instead
+control access to their class labels, such that training labels drive 
+optimisation,<br>validation labels support model selection, and test labels are
+withheld until the final evaluation.
+
+For the GNN, this means that held-out nodes can still contribute neighbourhood
+and graph-structure<br>information during message passing, while the prediction
+task remains the inference of withheld<br>labels for existing nodes in the same
+graph.
+
 ### 3.6 Train / Validation / Test Splits
+
+Nodes are divided using a reproducible stratified 60/20/20 split, with a fixed
+seed value of 808.<br>
+The resulting Boolean masks form a complete, non-overlapping partition of the
+data nodes while<br>approximately preserving class proportions.
+
 ### 3.7 Leakage Prevention
+
+The train, validation, and test masks are non-overlapping, and together, cover
+all graph nodes.<br>
+During optimisation, cross-entropy loss is calculated only for nodes selected
+by the training mask.
+
+Validation labels do not contribute to gradient updates and are used only for
+model selection.<br>
+The model checkpoint with the lowest validation loss is retained.<br>
+Test labels are excluded from training/validation, and do not inform checkpoint
+selection. They are<br>accessed only for final evaluation, once model
+development and selection have been completed.
+
+Because this is a transductive task, held-out nodes remain part of the observed
+graph, so their<br>features and edges may contribute to message passing. The
+relevant leakage boundary is<br>therefore how ground-truth labels are used,
+rather than whether the held-out nodes are structurally<br>visible. While
+training labels drive optimisation, and validation labels support model 
+selection, the<br>test labels remain withheld until final evaluation.
 
 ## 4. Methods
 ### 4.1 Baseline Model
+
+The baseline is a feature-only MLP using the 128-dimensional node features
+without graph connectivity.<br>
+The model consists of a 128 → 64 linear layer, a ReLU activation, dropout
+(`p=0.5`), and a 64 → 4<br>output layer producing raw class logits.
+
 ### 4.2 Multi-Layer GNN
 ### 4.3 Training Procedure
+
+The baseline is trained using cross-entropy loss and the Adam optimiser
+(`lr=0.001`,<br>`weight_decay=0`). Training uses a maximum of 2000 full-batch
+epochs, with the model checkpoint<br>selected by minimum validation loss.<br>
+Only training-node labels contribute to optimisation.
+
 ### 4.4 Confidence / Calibration Method
 ### 4.5 Reject-Option Decision Rule
 
 ## 5. Experimental Results
 ### 5.1 Training Behaviour
+
+The initial MLP training budget was increased progressively while validation
+loss was still improving,<br>taking advantage of the relatively low cost of
+each full-batch epoch. The maximum was eventually set<br>to 2,000 epochs, which
+was sufficient to extend well beyond the observed validation-loss minimum<br>
+and therefore capture the relevant training behaviour, with some margin.
+
+A clean local run (employing 2,000 epochs) completed in approximately 19.5
+seconds, with the<br>minimum validation cross-entropy loss of 0.55159 occurring
+at epoch 1,545.
+
+Training and validation loss both decreased rapidly over the first few hundred
+epochs. Thereafter,<br>training loss continued to decrease steadily, while
+validation loss improved more gradually, before<br>reaching a broad minimum.
+Beyond the best validation checkpoint, training loss continued to fall<br>while
+validation loss increased slightly, indicating mild overfitting rather than
+severe divergence.
+
+Validation accuracy followed a slightly different pattern, improving rapidly
+during early training before<br>increasing more gradually towards approximately
+80%. Small improvements then continued, even<br>as validation loss largely
+plateaued.
+
+This difference between validation accuracy and validation loss is relevant to
+the later confidence<br>investigation. 
+Accuracy records only whether the highest-scoring class is correct, whereas
+cross-<br>entropy is also sensitive to prediction confidence. The differing
+behaviour of these metrics therefore<br>motivates later analysis of how
+confidence relates to correctness, and whether improved model<br>performance is
+accompanied by better-calibrated predictions. However, the curves alone are not
+<br>sufficient to establish model miscalibration or overconfidence.
+
 ### 5.2 Classification Metrics
 ### 5.3 Baseline vs GNN
 ### 5.4 t-SNE / UMAP Embedding Analysis
@@ -112,6 +245,10 @@ for type annotations, within<br>the project code.
 Provided cast and assertion suggestions that were adapted for
 add_stratified_masks, to allow for the resolution<br>of IDE type-checker
 warnings, without compromising on the project's 'rigorous' typing conventions.
+
+Provided feasible argument typing suggestions for the train_mlp_epoch and
+evaluate_mpl function signatures,<br>from which, I chose those the most
+appropriate for the project's typing conventions.
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates, prior to the<br>final refinements by myself.
