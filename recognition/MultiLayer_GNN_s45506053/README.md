@@ -141,23 +141,46 @@ selection, the<br>test labels remain withheld until final evaluation.
 ### 4.1 Baseline Model
 
 The baseline is a feature-only MLP using the 128-dimensional node features
-without graph connectivity.<br>
+without graph<br>connectivity.<br>
 The model consists of a 128 → 64 linear layer, a ReLU activation, dropout
 (`p=0.5`), and a 64 → 4<br>output layer producing raw class logits.
 
-### 4.2 Multi-Layer GNN
+### 4.2 Graph Convolutional Network (GCN)
+
+The graph model is a two-layer Graph Convolutional Network (GCN). It retains
+the same<br>128 → 64 → 4 dimensional structure, ReLU activation, and dropout
+(`p=0.5`) used by the MLP<br>baseline, but replaces the linear layers with
+PyG `GCNConv` layers.
+
+Each graph-convolution layer uses the node features together with
+`edge_index`, allowing<br>neighbouring-node information to contribute to the
+learned representation. The GCN retains the<br>same number of hidden-layer
+units, ReLU activation, and dropout setting as the MLP baseline,<br> while
+replacing the feature-only linear transformations with graph convolutions that
+incorporate<br>neighbourhood structure.
+
 ### 4.3 Training Procedure
 
-The baseline is trained using cross-entropy loss and the Adam optimiser
-(`lr=0.001`,<br>`weight_decay=0`). Training uses a maximum of 2000 full-batch
-epochs, with the model checkpoint<br>selected by minimum validation loss.<br>
-Only training-node labels contribute to optimisation.
+The MLP and GCN are both trained using cross-entropy loss and the Adam
+optimiser (`lr=0.001`,<br>`weight_decay=0`) under the same 60/20/20 stratified
+split. Both models use a hidden width of 64<br>and dropout probability of 0.5.
+
+Training is full-batch, with only training-node labels contributing to
+optimisation. Validation is<br>performed after each training epoch, and the
+checkpoint with the minimum validation loss is retained.
+
+The MLP training budget was bounded at 2,000 epochs. An initial 2,000-epoch GCN
+run attained its<br>lowest validation loss at the final epoch, so the budget
+was subsequently extended to 4,000 epochs.<br>This provided sufficient margin
+to capture the later training behaviour and the observed validation-<br>loss
+minimum.
 
 ### 4.4 Confidence / Calibration Method
 ### 4.5 Reject-Option Decision Rule
 
 ## 5. Experimental Results
 ### 5.1 Training Behaviour
+#### 5.1.1 Baseline MLP
 
 The initial MLP training budget was increased progressively while validation
 loss was still improving,<br>taking advantage of the relatively low cost of
@@ -190,8 +213,43 @@ confidence relates to correctness, and whether improved model<br>performance is
 accompanied by better-calibrated predictions. However, the curves alone are not
 <br>sufficient to establish model miscalibration or overconfidence.
 
+#### 5.1.2 Initial GCN
+
+The initial GCN run began with the same 2,000-epoch maximum as the MLP,
+but its minimum<br>validation loss occurred at epoch 2,000. This indicated that
+the useful training region had not yet<br>been bounded, and so the maximum was
+increased to 4,000 epochs for a clean follow-up run.
+
+The 4,000-epoch run completed locally in approximately 777.2 seconds
+(12.95 minutes). Minimum<br>validation cross-entropy loss was 0.22775 at epoch
+3,244, leaving approximately 750 subsequent<br>epochs in which validation loss
+no longer improved.
+Validation accuracy rapidly rose above 90%<br>during the earlier epochs before
+improving more gradually to approximately 93–94%. Beyond<br>the best validation
+checkpoint, classification accuracy remained largely stable while training
+<br>loss continued to decline, providing sufficient evidence that the
+4,000-epoch budget captured the<br>relevant later training behaviour.
+
 ### 5.2 Classification Metrics
-### 5.3 Baseline vs GNN
+### 5.3 Baseline vs GCN
+
+Keeping the hidden-layer size, ReLU activation, dropout, optimiser settings,
+and data split aligned<br>with the MLP provided a controlled first comparison
+in which the principal architectural point of<br>difference was the
+incorporation of graph structure. Under these conditions, the GCN produced<br>
+substantially stronger validation performance than the feature-only MLP.
+Validation accuracy<br>increased from approximately 80% for the MLP to
+approximately 93–94% for the GCN, while the<br>selected validation
+cross-entropy loss decreased from 0.55159 to 0.22775.
+
+This improvement came at substantially greater computational cost, however, as
+the clean MLP<br>run only required approximately 19.5 seconds locally, compared
+with 12.95 minutes for the<br>4,000-epoch GCN run. These validation results
+therefore indicate a strong preliminary<br>performance advantage for the GCN.
+Whether this advantage is sufficient to justify the GCN's<br>additional
+computational cost will be assessed through held-out test-set evaluation and
+formal<br>comparative resource profiling.
+
 ### 5.4 t-SNE / UMAP Embedding Analysis
 ### 5.5 Confidence and Ambiguity Analysis
 ### 5.6 Resource Profiling
@@ -223,9 +281,9 @@ provided below / in the accompanying<br>environment specification.
 ### 9.5 Reproducing Results
 
 When starting from the course-linked `facebook.npz` archive,
-`prepare_facebook_data.py` must be<br>run once to create the raw file layout and
-array schema expected by PyG's `FacebookPagePage` loader.<br>Subsequent loading
-and preprocessing are performed through `dataset.py`.
+`prepare_facebook_data.py` must be<br>run once to create the raw file layout
+and array schema expected by PyG's `FacebookPagePage` loader.<br>Subsequent
+loading and preprocessing are performed through `dataset.py`.
 
 ## 10. Repository Structure
 
@@ -247,7 +305,7 @@ add_stratified_masks, to allow for the resolution<br>of IDE type-checker
 warnings, without compromising on the project's 'rigorous' typing conventions.
 
 Provided feasible argument typing suggestions for the train_mlp_epoch and
-evaluate_mpl function signatures,<br>from which, I chose those the most
+evaluate_mlp function signatures,<br>from which, I chose those the most
 appropriate for the project's typing conventions.
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
