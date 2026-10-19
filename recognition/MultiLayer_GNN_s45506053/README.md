@@ -188,7 +188,7 @@ each full-batch epoch. The maximum was eventually set<br>to 2,000 epochs, which
 was sufficient to extend well beyond the observed validation-loss minimum<br>
 and therefore capture the relevant training behaviour, with some margin.
 
-A clean local run (employing 2,000 epochs) completed in approximately 19.5
+A clean local run (employing 2,000 epochs) completed in approximately 18.5
 seconds, with the<br>minimum validation cross-entropy loss of 0.55159 occurring
 at epoch 1,545.
 
@@ -220,9 +220,9 @@ but its minimum<br>validation loss occurred at epoch 2,000. This indicated that
 the useful training region had not yet<br>been bounded, and so the maximum was
 increased to 4,000 epochs for a clean follow-up run.
 
-The 4,000-epoch run completed locally in approximately 777.2 seconds
-(12.95 minutes). Minimum<br>validation cross-entropy loss was 0.22775 at epoch
-3,244, leaving approximately 750 subsequent<br>epochs in which validation loss
+The 4,000-epoch run completed locally in approximately 584.5 seconds
+(9.74 minutes). Minimum<br>validation cross-entropy loss was 0.22795 at epoch
+3,614, leaving approximately 386 subsequent<br>epochs in which validation loss
 no longer improved.
 Validation accuracy rapidly rose above 90%<br>during the earlier epochs before
 improving more gradually to approximately 93–94%. Beyond<br>the best validation
@@ -238,13 +238,13 @@ and data split aligned<br>with the MLP provided a controlled first comparison
 in which the principal architectural point of<br>difference was the
 incorporation of graph structure. Under these conditions, the GCN produced<br>
 substantially stronger validation performance than the feature-only MLP.
-Validation accuracy<br>increased from approximately 80% for the MLP to
-approximately 93–94% for the GCN, while the<br>selected validation
-cross-entropy loss decreased from 0.55159 to 0.22775.
+At the selected minimum-<br>validation-loss checkpoints, validation accuracy
+was approximately 79.7% for the MLP and 93.7%<br>for the GCN, while validation
+cross-entropy loss decreased from 0.55159 to 0.22795.
 
 This improvement came at substantially greater computational cost, however, as
-the clean MLP<br>run only required approximately 19.5 seconds locally, compared
-with 12.95 minutes for the<br>4,000-epoch GCN run. These validation results
+the clean MLP<br>run only required approximately 18.5 seconds locally, compared
+with 9.74 minutes for the<br>4,000-epoch GCN run. These validation results
 therefore indicate a strong preliminary<br>performance advantage for the GCN.
 Whether this advantage is sufficient to justify the GCN's<br>additional
 computational cost will be assessed through held-out test-set evaluation and
@@ -307,6 +307,14 @@ warnings, without compromising on the project's 'rigorous' typing conventions.
 Provided feasible argument typing suggestions for the train_mlp_epoch and
 evaluate_mlp function signatures,<br>from which, I chose those the most
 appropriate for the project's typing conventions.
+
+Provided suggestions for harmonising the current plotting approach, based on
+examples I had used in data<br>analysis exercises, previously, which I then
+adapted into a coherent notebook plotting style for the project.
+
+Provided suggestions for persisting experiment configuration, training history,
+selected model checkpoints, and<br>plot outputs, which I adapted for the MLP
+and GCN experiment notebooks.
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates, prior to the<br>final refinements by myself.
