@@ -10,10 +10,101 @@ References: None
 from collections.abc import Callable
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.optim import Optimizer
 
-from modules import MLPNetwork, GCNNetwork
+from modules import MLPNetwork, GCNNetwork, GCNNetwork3Layer
+
+# define general gcn parameter
+GCNModel = GCNNetwork | GCNNetwork3Layer
+
+
+def _train_epoch(
+        model: nn.Module,
+        forward_pass: Callable[[], Tensor],
+        labels: Tensor,
+        train_mask: Tensor,
+        criterion: Callable[[Tensor, Tensor], Tensor],
+        optimizer: Optimizer,
+) -> float:
+    """
+    Perform shared optimisation steps for one training epoch.
+
+    Args:
+        model: Model being trained.
+        forward_pass: Callable that performs the model-specific forward pass
+            and returns raw class logits.
+        labels: Node class-label tensor.
+        train_mask: Boolean mask identifying training nodes.
+        criterion: Loss function used for optimisation.
+        optimizer: Optimizer used to update model parameters.
+
+    Returns:
+        Training loss for the epoch.
+
+    """
+    model.train()
+    optimizer.zero_grad()  # clear gradients from the previous step
+
+    logits = forward_pass()  # perform the model-specific forward pass
+
+    # compute the loss using only the training nodes
+    loss = criterion(
+        logits[train_mask],
+        labels[train_mask],
+    )
+
+    loss.backward()  # compute gradients via backpropagation
+    optimizer.step()  # update model parameters
+
+    return float(loss.item())
+
+
+@torch.no_grad()
+def _evaluate(
+        model: nn.Module,
+        forward_pass: Callable[[], Tensor],
+        labels: Tensor,
+        mask: Tensor,
+        criterion: Callable[[Tensor, Tensor], Tensor],
+) -> tuple[float, float]:
+    """
+    Perform shared evaluation steps for nodes selected by the provided mask.
+
+    Args:
+        model: Model to evaluate.
+        forward_pass: Callable that performs the model-specific forward pass
+            and returns raw class logits.
+        labels: Node class-label tensor.
+        mask: Boolean mask identifying nodes to evaluate.
+        criterion: Loss function used for evaluation.
+
+    Returns:
+        Evaluation loss and classification accuracy.
+
+    """
+    model.eval()  # switch to evaluation mode
+
+    logits = forward_pass()  # perform the model-specific forward pass
+
+    # select only the nodes included in the evaluation split
+    masked_logits = logits[mask]
+    masked_labels = labels[mask]
+
+    loss = criterion(
+        masked_logits,
+        masked_labels,
+    )
+
+    # select the highest-scoring class for each node
+    predictions = masked_logits.argmax(dim=1)
+
+    # calculate the proportion of correctly classified nodes
+    accuracy = (
+            predictions == masked_labels
+    ).float().mean()
+
+    return float(loss.item()), float(accuracy.item())
 
 
 def train_mlp_epoch(
@@ -39,24 +130,16 @@ def train_mlp_epoch(
         Training loss for the epoch.
 
     """
-    model.train()
-    optimizer.zero_grad()  # clear gradients from the previous step
-
-    logits = model(features)  # perform a forward pass
-
-    # compute the loss using only the training nodes
-    loss = criterion(
-        logits[train_mask],
-        labels[train_mask],
+    return _train_epoch(
+        model=model,
+        forward_pass=lambda: model(features),
+        labels=labels,
+        train_mask=train_mask,
+        criterion=criterion,
+        optimizer=optimizer,
     )
 
-    loss.backward()  # compute gradients via backpropagation
-    optimizer.step()  # update model parameters
 
-    return float(loss.item())
-
-
-@torch.no_grad()
 def evaluate_mlp(
         model: MLPNetwork,
         features: Tensor,
@@ -78,32 +161,17 @@ def evaluate_mlp(
         Evaluation loss and classification accuracy.
 
     """
-    model.eval()  # switch to evaluation mode
-
-    logits = model(features)  # perform a forward pass
-
-    # select only the nodes included in the evaluation split
-    masked_logits = logits[mask]
-    masked_labels = labels[mask]
-
-    loss = criterion(
-        masked_logits,
-        masked_labels,
+    return _evaluate(
+        model=model,
+        forward_pass=lambda: model(features),
+        labels=labels,
+        mask=mask,
+        criterion=criterion,
     )
-
-    # select the highest-scoring class for each node
-    predictions = masked_logits.argmax(dim=1)
-
-    # calculate the proportion of correctly classified nodes
-    accuracy = (
-            predictions == masked_labels
-    ).float().mean()
-
-    return float(loss.item()), float(accuracy.item())
 
 
 def train_gcn_epoch(
-        model: GCNNetwork,
+        model: GCNModel,
         features: Tensor,
         edge_index: Tensor,
         labels: Tensor,
@@ -127,26 +195,18 @@ def train_gcn_epoch(
         Training loss for the epoch.
 
     """
-    model.train()
-    optimizer.zero_grad()  # clear gradients from the previous step
-
-    logits = model(features, edge_index)  # perform a forward pass
-
-    # compute the loss using only the training nodes
-    loss = criterion(
-        logits[train_mask],
-        labels[train_mask],
+    return _train_epoch(
+        model=model,
+        forward_pass=lambda: model(features, edge_index),
+        labels=labels,
+        train_mask=train_mask,
+        criterion=criterion,
+        optimizer=optimizer,
     )
 
-    loss.backward()  # compute gradients via backpropagation
-    optimizer.step()  # update model parameters
 
-    return float(loss.item())
-
-
-@torch.no_grad()
 def evaluate_gcn(
-        model: GCNNetwork,
+        model: GCNModel,
         features: Tensor,
         edge_index: Tensor,
         labels: Tensor,
@@ -168,25 +228,10 @@ def evaluate_gcn(
         Evaluation loss and classification accuracy.
 
     """
-    model.eval()  # switch to evaluation mode
-
-    logits = model(features, edge_index)  # perform a forward pass
-
-    # select only the nodes included in the evaluation split
-    masked_logits = logits[mask]
-    masked_labels = labels[mask]
-
-    loss = criterion(
-        masked_logits,
-        masked_labels,
+    return _evaluate(
+        model=model,
+        forward_pass=lambda: model(features, edge_index),
+        labels=labels,
+        mask=mask,
+        criterion=criterion,
     )
-
-    # select the highest-scoring class for each node
-    predictions = masked_logits.argmax(dim=1)
-
-    # calculate the proportion of correctly classified nodes
-    accuracy = (
-            predictions == masked_labels
-    ).float().mean()
-
-    return float(loss.item()), float(accuracy.item())
