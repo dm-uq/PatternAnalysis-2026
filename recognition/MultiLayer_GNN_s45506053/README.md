@@ -529,6 +529,10 @@ Checked my train.py functionality-generalising refactor for 'hangover errors',
 and suggested the use<br>of a forward-pass lambda function parameter, which I
 adopted.
 
+Checked my train.py train_gcn_model and train/val plotting functionality
+refactors for 'hangover<br>errors', and suggested the use of an assertion to
+guard against potential 'div by 0' errors, which I<br>adopted.
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 

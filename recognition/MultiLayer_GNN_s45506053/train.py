@@ -9,9 +9,19 @@ References: None
 """
 from collections.abc import Callable
 
+import copy
+import time
+
 import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.ticker import PercentFormatter
 
 from modules import (
     MLPNetwork,
@@ -241,3 +251,225 @@ def evaluate_gcn(
         mask=mask,
         criterion=criterion,
     )
+
+
+def train_gcn_model(
+        model: GCNModel,
+        features: Tensor,
+        edge_index: Tensor,
+        labels: Tensor,
+        train_mask: Tensor,
+        val_mask: Tensor,
+        criterion: Callable[[Tensor, Tensor], Tensor],
+        optimizer: Optimizer,
+        epochs: int,
+        print_every: int = 100,
+):
+    """
+    Train a GCN model and retain the state with the lowest validation loss.
+
+    Runs full-batch training for the requested number of epochs, evaluating
+    the model on the validation split after each epoch. Training loss,
+    validation loss, and validation accuracy are recorded for later
+    analysis and visualisation.
+
+    :param model: GCN model to train.
+    :param features: Node feature tensor.
+    :param edge_index: Graph connectivity in PyG edge-index format.
+    :param labels: Ground-truth node class labels.
+    :param train_mask: Boolean mask selecting training nodes.
+    :param val_mask: Boolean mask selecting validation nodes.
+    :param criterion: Loss function used for training and validation.
+    :param optimizer: Optimizer used to update the model parameters.
+    :param epochs: Number of training epochs to run.
+    :param print_every: Interval between printed training updates.
+    :return: Dictionary containing the training history, best validation
+        loss, best epoch, best model state, and elapsed training time.
+    """
+    # guard against div by 0
+    if epochs < 1:
+        raise ValueError("epochs must be at least 1")
+
+    if print_every < 1:
+        raise ValueError("print_every must be at least 1")
+
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "val_accuracy": [],
+    }
+
+    best_val_loss = float("inf")
+    best_epoch = 0
+    best_state = None
+
+    print("> Training GCN")
+
+    start = time.perf_counter()
+
+    for epoch in range(1, epochs + 1):
+        train_loss = train_gcn_epoch(
+            model=model,
+            features=features,
+            edge_index=edge_index,
+            labels=labels,
+            train_mask=train_mask,
+            criterion=criterion,
+            optimizer=optimizer,
+        )
+
+        val_loss, val_accuracy = evaluate_gcn(
+            model=model,
+            features=features,
+            edge_index=edge_index,
+            labels=labels,
+            mask=val_mask,
+            criterion=criterion,
+        )
+
+        # record training history for later visualisation
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["val_accuracy"].append(val_accuracy)
+
+        # retain the model with the lowest validation loss
+        improved = val_loss < best_val_loss
+
+        if improved:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            best_state = copy.deepcopy(
+                model.state_dict()
+            )
+
+        if (
+                epoch == 1
+                or epoch % print_every == 0
+                or epoch == epochs
+        ):
+            print(
+                f"Epoch [{epoch:4}/{epochs}] "
+                f"Train Loss: {train_loss:.5f} | "
+                f"Val Loss: {val_loss:.5f} | "
+                f"Val Acc: {val_accuracy:.2%}"
+            )
+
+    elapsed = time.perf_counter() - start
+
+    print(
+        f"\nTraining took {elapsed:.2f} secs "
+        f"or {elapsed / 60:.2f} mins in total."
+    )
+
+    print(
+        f"Best validation loss: {best_val_loss:.5f} "
+        f"at epoch {best_epoch}."
+    )
+
+    return {
+        "history": history,
+        "best_val_loss": best_val_loss,
+        "best_epoch": best_epoch,
+        "best_state": best_state,
+        "elapsed": elapsed,
+    }
+
+
+def plot_training_validation_loss(
+        history: dict[str, list[float]],
+        best_epoch: int,
+        title: str,
+) -> tuple[Figure, Axes]:
+    """
+    Plot training and validation loss across training epochs.
+
+    :param history: Training history containing training and validation losses.
+    :param best_epoch: Epoch with the lowest validation loss.
+    :param title: Figure title.
+    :return: Matplotlib figure and axes containing the loss plot.
+    """
+    epochs = range(
+        1,
+        len(history["train_loss"]) + 1
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(8, 5)
+    )
+
+    ax.plot(
+        epochs,
+        history["train_loss"],
+        label="Training loss",
+    )
+    ax.plot(
+        epochs,
+        history["val_loss"],
+        label="Validation loss",
+    )
+    ax.axvline(
+        best_epoch,
+        linestyle="--",
+        label=f"Best epoch ({best_epoch})",
+    )
+
+    ax.set(
+        xlabel="Epoch",
+        ylabel="Loss",
+        title=title,
+    )
+    ax.legend()
+
+    sns.despine(ax=ax)
+    fig.tight_layout()
+
+    return fig, ax
+
+
+def plot_training_validation_accuracy(
+        history: dict[str, list[float]],
+        best_epoch: int,
+        title: str,
+) -> tuple[Figure, Axes]:
+    """
+    Plot validation accuracy across training epochs.
+
+    :param history: Training history containing validation accuracy.
+    :param best_epoch: Epoch with the lowest validation loss.
+    :param title: Figure title.
+    :return: Matplotlib figure and axes containing the accuracy plot.
+    """
+    epochs = range(
+        1,
+        len(history["val_accuracy"]) + 1
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(8, 5)
+    )
+
+    ax.plot(
+        epochs,
+        history["val_accuracy"],
+        label="Validation accuracy",
+    )
+    ax.axvline(
+        best_epoch,
+        linestyle="--",
+        label=f"Best epoch ({best_epoch})",
+    )
+
+    ax.set(
+        xlabel="Epoch",
+        ylabel="Accuracy",
+        title=title,
+    )
+    ax.yaxis.set_major_formatter(
+        PercentFormatter(1.0)
+    )
+    ax.legend()
+
+    sns.despine(ax=ax)
+    fig.tight_layout()
+
+    return fig, ax
