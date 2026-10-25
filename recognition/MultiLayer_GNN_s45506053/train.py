@@ -16,6 +16,8 @@ import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
+from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -473,3 +475,61 @@ def plot_training_validation_accuracy(
     fig.tight_layout()
 
     return fig, ax
+
+
+def classification_metrics(
+        logits: Tensor,
+        labels: Tensor,
+        mask: Tensor,
+) -> dict:
+    """
+    Calculate classification metrics for nodes selected by a mask.
+
+    :param logits: Raw class logits produced by the model.
+    :param labels: Ground-truth node class labels.
+    :param mask: Boolean mask selecting nodes to evaluate.
+    :return: Dictionary containing aggregate and per-class metrics.
+    """
+    selected_logits = logits[mask]
+    selected_labels = labels[mask]
+
+    # convert raw logits and get prediction results
+    probabilities = selected_logits.softmax(dim=1)
+    predictions = probabilities.argmax(dim=1)
+
+    y_true = selected_labels.detach().cpu().numpy()
+    y_pred = predictions.detach().cpu().numpy()
+    y_prob = probabilities.detach().cpu().numpy()
+
+    # compute metrics
+    precision, recall, f1, support = (
+        precision_recall_fscore_support(
+            y_true,
+            y_pred,
+            labels=range(selected_logits.shape[1]),
+            zero_division=0,
+        )
+    )
+
+    accuracy = (
+            predictions == selected_labels
+    ).float().mean().item()
+
+    macro_auroc = roc_auc_score(
+        y_true,
+        y_prob,
+        multi_class="ovr",
+        average="macro",
+    )
+
+    return {
+        "accuracy": accuracy,
+        "macro_precision": precision.mean().item(),
+        "macro_recall": recall.mean().item(),
+        "macro_f1": f1.mean().item(),
+        "macro_auroc": float(macro_auroc),
+        "precision": precision.tolist(),
+        "recall": recall.tolist(),
+        "f1": f1.tolist(),
+        "support": support.tolist(),
+    }

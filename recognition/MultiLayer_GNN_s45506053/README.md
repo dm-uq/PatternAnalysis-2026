@@ -533,6 +533,13 @@ Checked my train.py train_gcn_model and train/val plotting functionality
 refactors for 'hangover<br>errors', and suggested the use of an assertion to
 guard against potential 'div by 0' errors, which I<br>adopted.
 
+Provided suggestions for refactoring the current evaluation approach into
+train.py, including the<br>incorporation of additional required project metrics
+(e.g. Macro F1, AUROC) that will also inform<br>hyperparameter tuning, based on
+examples I had used in data analysis exercises, previously, which<br>I then
+adapted into the classification_metrics function. Provided a temporary 'smoke
+test' for this<br>updated functionality that confirm correct functioning.
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 
