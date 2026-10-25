@@ -13,10 +13,16 @@ import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
-from modules import MLPNetwork, GCNNetwork, GCNNetwork3Layer
+from modules import (
+    MLPNetwork,
+    GCNNetwork,
+    GCNNetwork3Layer,
+    GCNNetwork4Layer,
+    GCNNetwork5Layer
+)
 
 # define general gcn parameter
-GCNModel = GCNNetwork | GCNNetwork3Layer
+GCNModel = GCNNetwork | GCNNetwork3Layer | GCNNetwork4Layer | GCNNetwork5Layer
 
 
 def _train_epoch(
