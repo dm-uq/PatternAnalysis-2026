@@ -540,6 +540,10 @@ examples I had used in data analysis exercises, previously, which<br>I then
 adapted into the classification_metrics function. Provided a temporary 'smoke
 test' for this<br>updated functionality that confirm correct functioning.
 
+Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
+IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
+and LeakyReLU activations in the<br>definition of GCNModel.
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 

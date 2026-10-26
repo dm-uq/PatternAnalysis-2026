@@ -333,3 +333,135 @@ class GCNNetwork5Layer(nn.Module):
         x = self.dropout4(x)
 
         return self.conv5(x, edge_index)
+
+
+class GCNNetwork4LayerELU(nn.Module):
+    def __init__(
+            self,
+            in_channels: int,
+            hidden_channels: int,
+            out_channels: int,
+            dropout: float = 0.5,
+    ) -> None:
+        """
+        Initialise a 4-Layer GCN network with ELU activation functions.
+        Uses default alpha=1 parameter value.
+
+        Args:
+            in_channels: Number of input node features.
+            hidden_channels: Number of units in the hidden layers.
+            out_channels: Number of output classes.
+            dropout: Probability of an element being zeroed during dropout.
+
+        """
+        super().__init__()
+
+        self.conv1 = GCNConv(in_channels, hidden_channels)
+        self.act1 = nn.ELU()
+        self.dropout1 = nn.Dropout(dropout)
+
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.act2 = nn.ELU()
+        self.dropout2 = nn.Dropout(dropout)
+
+        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.act3 = nn.ELU()
+        self.dropout3 = nn.Dropout(dropout)
+
+        self.conv4 = GCNConv(hidden_channels, out_channels)
+
+    def forward(
+            self,
+            x: Tensor,
+            edge_index: Tensor,
+    ) -> Tensor:
+        """
+        Perform a forward pass through the network.
+
+        Args:
+            x: Node-feature tensor of shape `(num_nodes, in_channels)`.
+            edge_index: Graph connectivity tensor of shape `(2, num_edges)`.
+
+        Returns:
+            Raw class logits of shape `(num_nodes, out_channels)`.
+
+        """
+        x = self.conv1(x, edge_index)
+        x = self.act1(x)
+        x = self.dropout1(x)
+
+        x = self.conv2(x, edge_index)
+        x = self.act2(x)
+        x = self.dropout2(x)
+
+        x = self.conv3(x, edge_index)
+        x = self.act3(x)
+        x = self.dropout3(x)
+
+        return self.conv4(x, edge_index)
+
+
+class GCNNetwork4LayerLReLU(nn.Module):
+    def __init__(
+            self,
+            in_channels: int,
+            hidden_channels: int,
+            out_channels: int,
+            dropout: float = 0.5,
+    ) -> None:
+        """
+        Initialise a 4-Layer GCN network with Leaky ReLU activation functions.
+        Uses default negative_slope=1e-2 parameter value.
+
+        Args:
+            in_channels: Number of input node features.
+            hidden_channels: Number of units in the hidden layers.
+            out_channels: Number of output classes.
+            dropout: Probability of an element being zeroed during dropout.
+
+        """
+        super().__init__()
+
+        self.conv1 = GCNConv(in_channels, hidden_channels)
+        self.act1 = nn.LeakyReLU()
+        self.dropout1 = nn.Dropout(dropout)
+
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.act2 = nn.LeakyReLU()
+        self.dropout2 = nn.Dropout(dropout)
+
+        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.act3 = nn.LeakyReLU()
+        self.dropout3 = nn.Dropout(dropout)
+
+        self.conv4 = GCNConv(hidden_channels, out_channels)
+
+    def forward(
+            self,
+            x: Tensor,
+            edge_index: Tensor,
+    ) -> Tensor:
+        """
+        Perform a forward pass through the network.
+
+        Args:
+            x: Node-feature tensor of shape `(num_nodes, in_channels)`.
+            edge_index: Graph connectivity tensor of shape `(2, num_edges)`.
+
+        Returns:
+            Raw class logits of shape `(num_nodes, out_channels)`.
+
+        """
+        x = self.conv1(x, edge_index)
+        x = self.act1(x)
+        x = self.dropout1(x)
+
+        x = self.conv2(x, edge_index)
+        x = self.act2(x)
+        x = self.dropout2(x)
+
+        x = self.conv3(x, edge_index)
+        x = self.act3(x)
+        x = self.dropout3(x)
+
+        return self.conv4(x, edge_index)

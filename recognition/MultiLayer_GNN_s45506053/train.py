@@ -7,6 +7,8 @@ Contains training and evaluation utilities used by the project experiments.
 References: None
 
 """
+from typing import TypeAlias
+
 from collections.abc import Callable
 
 import copy
@@ -30,11 +32,20 @@ from modules import (
     GCNNetwork,
     GCNNetwork3Layer,
     GCNNetwork4Layer,
-    GCNNetwork5Layer
+    GCNNetwork5Layer,
+    GCNNetwork4LayerELU,
+    GCNNetwork4LayerLReLU,
 )
 
 # define general gcn parameter
-GCNModel = GCNNetwork | GCNNetwork3Layer | GCNNetwork4Layer | GCNNetwork5Layer
+GCNModel: TypeAlias = (
+    GCNNetwork
+    | GCNNetwork3Layer
+    | GCNNetwork4Layer
+    | GCNNetwork5Layer
+    | GCNNetwork4LayerELU
+    | GCNNetwork4LayerLReLU
+)
 
 
 def _train_epoch(
