@@ -32,8 +32,8 @@ from modules import (
     MLPNetwork3Layer,
     MLPNetwork4Layer,
     MLPNetwork5Layer,
-    MLPNetwork4LayerELU,
-    MLPNetwork4LayerLReLU,
+    MLPNetwork3LayerELU,
+    MLPNetwork3LayerLReLU,
     GCNNetwork,
     GCNNetwork3Layer,
     GCNNetwork4Layer,
@@ -48,8 +48,8 @@ MLPModel: TypeAlias = (
         | MLPNetwork3Layer
         | MLPNetwork4Layer
         | MLPNetwork5Layer
-        | MLPNetwork4LayerELU
-        | MLPNetwork4LayerLReLU
+        | MLPNetwork3LayerELU
+        | MLPNetwork3LayerLReLU
 )
 
 # define GCN model type alias

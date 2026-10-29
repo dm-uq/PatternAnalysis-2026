@@ -274,9 +274,9 @@ class MLPNetwork5Layer(nn.Module):
 
 # REF: Adapted from the standard PyTorch `nn.Module` pattern demonstrated in
 #  the PyTorch "Build the Neural Network" tutorial [1].
-class MLPNetwork4LayerELU(nn.Module):
+class MLPNetwork3LayerELU(nn.Module):
     """
-    Four-layer MLP baseline for node classification, with configurable
+    Three-layer MLP baseline for node classification, with configurable
     node-feature dimensions and dropout parameter.
     Uses ELU activations in place of ReLU.
     """
@@ -289,7 +289,7 @@ class MLPNetwork4LayerELU(nn.Module):
             dropout: float = 0.5  # library default
     ) -> None:
         """
-        Initialise a 4-Layer MLP network with ELU activation functions.
+        Initialise a 3-Layer MLP network with ELU activation functions.
         Uses default alpha=1 parameter value.
 
         Args:
@@ -309,11 +309,7 @@ class MLPNetwork4LayerELU(nn.Module):
         self.act2 = nn.ELU()
         self.dropout2 = nn.Dropout(dropout)
 
-        self.lin3 = nn.Linear(hidden_channels, hidden_channels)
-        self.act3 = nn.ELU()
-        self.dropout3 = nn.Dropout(dropout)
-
-        self.lin4 = nn.Linear(hidden_channels, out_channels)
+        self.lin3 = nn.Linear(hidden_channels, out_channels)
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -334,18 +330,14 @@ class MLPNetwork4LayerELU(nn.Module):
         x = self.act2(x)
         x = self.dropout2(x)
 
-        x = self.lin3(x)
-        x = self.act3(x)
-        x = self.dropout3(x)
-
-        return self.lin4(x)
+        return self.lin3(x)
 
 
 # REF: Adapted from the standard PyTorch `nn.Module` pattern demonstrated in
 #  the PyTorch "Build the Neural Network" tutorial [1].
-class MLPNetwork4LayerLReLU(nn.Module):
+class MLPNetwork3LayerLReLU(nn.Module):
     """
-    Four-layer MLP baseline for node classification, with configurable
+    Three-layer MLP baseline for node classification, with configurable
     node-feature dimensions and dropout parameter.
     Uses LeakyReLU activations in place of ReLU.
     """
@@ -358,7 +350,7 @@ class MLPNetwork4LayerLReLU(nn.Module):
             dropout: float = 0.5  # library default
     ) -> None:
         """
-        Initialise a 4-Layer MLP network with Leaky ReLU activation functions.
+        Initialise a 3-Layer MLP network with Leaky ReLU activation functions.
         Uses default negative_slope=1e-2 parameter value.
 
         Args:
@@ -378,11 +370,7 @@ class MLPNetwork4LayerLReLU(nn.Module):
         self.act2 = nn.LeakyReLU()
         self.dropout2 = nn.Dropout(dropout)
 
-        self.lin3 = nn.Linear(hidden_channels, hidden_channels)
-        self.act3 = nn.LeakyReLU()
-        self.dropout3 = nn.Dropout(dropout)
-
-        self.lin4 = nn.Linear(hidden_channels, out_channels)
+        self.lin3 = nn.Linear(hidden_channels, out_channels)
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -403,11 +391,7 @@ class MLPNetwork4LayerLReLU(nn.Module):
         x = self.act2(x)
         x = self.dropout2(x)
 
-        x = self.lin3(x)
-        x = self.act3(x)
-        x = self.dropout3(x)
-
-        return self.lin4(x)
+        return self.lin3(x)
 
 
 # REF: Adapted from the PyG GCNConv API demonstrated in [2].
