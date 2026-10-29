@@ -29,6 +29,11 @@ from matplotlib.ticker import PercentFormatter
 
 from modules import (
     MLPNetwork,
+    MLPNetwork3Layer,
+    MLPNetwork4Layer,
+    MLPNetwork5Layer,
+    MLPNetwork4LayerELU,
+    MLPNetwork4LayerLReLU,
     GCNNetwork,
     GCNNetwork3Layer,
     GCNNetwork4Layer,
@@ -37,14 +42,24 @@ from modules import (
     GCNNetwork4LayerLReLU,
 )
 
-# define general gcn parameter
+# define MLP model type alias
+MLPModel: TypeAlias = (
+        MLPNetwork
+        | MLPNetwork3Layer
+        | MLPNetwork4Layer
+        | MLPNetwork5Layer
+        | MLPNetwork4LayerELU
+        | MLPNetwork4LayerLReLU
+)
+
+# define GCN model type alias
 GCNModel: TypeAlias = (
-    GCNNetwork
-    | GCNNetwork3Layer
-    | GCNNetwork4Layer
-    | GCNNetwork5Layer
-    | GCNNetwork4LayerELU
-    | GCNNetwork4LayerLReLU
+        GCNNetwork
+        | GCNNetwork3Layer
+        | GCNNetwork4Layer
+        | GCNNetwork5Layer
+        | GCNNetwork4LayerELU
+        | GCNNetwork4LayerLReLU
 )
 
 
@@ -137,7 +152,7 @@ def _evaluate(
 
 
 def train_mlp_epoch(
-        model: MLPNetwork,
+        model: MLPModel,
         features: Tensor,
         labels: Tensor,
         train_mask: Tensor,
@@ -170,7 +185,7 @@ def train_mlp_epoch(
 
 
 def evaluate_mlp(
-        model: MLPNetwork,
+        model: MLPModel,
         features: Tensor,
         labels: Tensor,
         mask: Tensor,
@@ -197,6 +212,124 @@ def evaluate_mlp(
         mask=mask,
         criterion=criterion,
     )
+
+
+def train_mlp_model(
+        model: MLPModel,
+        features: Tensor,
+        labels: Tensor,
+        train_mask: Tensor,
+        val_mask: Tensor,
+        criterion: Callable[[Tensor, Tensor], Tensor],
+        optimizer: Optimizer,
+        epochs: int,
+        print_every: int = 100,
+):
+    """
+    Train an MLP model and retain the state with the lowest validation loss.
+
+    Runs full-batch training for the requested number of epochs, evaluating
+    the model on the validation split after each epoch. Training loss,
+    validation loss, and validation accuracy are recorded for later
+    analysis and visualisation.
+
+    :param model: MLP model to train.
+    :param features: Node feature tensor.
+    :param labels: Ground-truth node class labels.
+    :param train_mask: Boolean mask selecting training nodes.
+    :param val_mask: Boolean mask selecting validation nodes.
+    :param criterion: Loss function used for training and validation.
+    :param optimizer: Optimizer used to update the model parameters.
+    :param epochs: Number of training epochs to run.
+    :param print_every: Interval between printed training updates.
+    :return: Dictionary containing the training history, best validation
+        loss, best epoch, best model state, and elapsed training time.
+    """
+    # guard against div by 0
+    if epochs < 1:
+        raise ValueError("epochs must be at least 1")
+
+    if print_every < 1:
+        raise ValueError("print_every must be at least 1")
+
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "val_accuracy": [],
+    }
+
+    best_val_loss = float("inf")
+    best_epoch = 0
+    best_state = None
+
+    print("> Training MLP")
+
+    start = time.perf_counter()
+
+    for epoch in range(1, epochs + 1):
+        train_loss = train_mlp_epoch(
+            model=model,
+            features=features,
+            labels=labels,
+            train_mask=train_mask,
+            criterion=criterion,
+            optimizer=optimizer,
+        )
+
+        val_loss, val_accuracy = evaluate_mlp(
+            model=model,
+            features=features,
+            labels=labels,
+            mask=val_mask,
+            criterion=criterion,
+        )
+
+        # record training history for later visualisation
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["val_accuracy"].append(val_accuracy)
+
+        # retain the model with the lowest validation loss
+        improved = val_loss < best_val_loss
+
+        if improved:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            best_state = copy.deepcopy(
+                model.state_dict()
+            )
+
+        if (
+                epoch == 1
+                or epoch % print_every == 0
+                or epoch == epochs
+        ):
+            print(
+                f"Epoch [{epoch:4}/{epochs}] "
+                f"Train Loss: {train_loss:.5f} | "
+                f"Val Loss: {val_loss:.5f} | "
+                f"Val Acc: {val_accuracy:.2%}"
+            )
+
+    elapsed = time.perf_counter() - start
+
+    print(
+        f"\nTraining took {elapsed:.2f} secs "
+        f"or {elapsed / 60:.2f} mins in total."
+    )
+
+    print(
+        f"Best validation loss: {best_val_loss:.5f} "
+        f"at epoch {best_epoch}."
+    )
+
+    return {
+        "history": history,
+        "best_val_loss": best_val_loss,
+        "best_epoch": best_epoch,
+        "best_state": best_state,
+        "elapsed": elapsed,
+    }
 
 
 def train_gcn_epoch(
