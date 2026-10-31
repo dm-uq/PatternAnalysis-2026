@@ -31,17 +31,15 @@ References: None
 from pathlib import Path
 from typing import Final, Literal, TypeAlias, cast
 
+import numpy as np
 import torch
+from sklearn.metrics import confusion_matrix
 from torch import Tensor
-
 from torch_geometric.data import Data
 from torch_geometric.datasets import FacebookPagePage
 
 from dataset import add_stratified_masks, load_facebook_data, CLASS_NAMES
-from modules import (
-    MLPNetwork3Layer,
-    GCNNetwork4Layer,
-)
+from modules import (MLPNetwork3Layer, GCNNetwork4Layer)
 from train import classification_metrics
 
 # CONSTANTS
@@ -329,7 +327,8 @@ def print_results(
     """
     # aggregate results table
     print(f"\n{model_name} Aggregate Test Results")
-    print("-" * 40)  # title separator
+    result_width = 26  # fixed width
+    print("-" * result_width)  # title separator
 
     print(f"{'Accuracy:':<18}{metrics['accuracy']:.2%}")
     print(f"{'Macro Precision:':<18}{metrics['macro_precision']:.2%}")
@@ -339,7 +338,26 @@ def print_results(
 
     # per-class results table
     print(f"\n{model_name} Per-Class Results")
-    print("-" * 64)  # title separator
+
+    # get column widths for table separators
+    class_width = 14
+    precision_width = 12
+    recall_width = 10
+    f1_width = 10
+    support_width = 10
+
+    # compute total table width
+    table_width = (
+            class_width
+            + precision_width
+            + recall_width
+            + f1_width
+            + support_width
+    )
+
+    print("-" * table_width)  # title separator
+
+    # print per-class table headings
     print(
         f"{'Class':<14}"
         f"{'Precision':>12}"
@@ -347,7 +365,8 @@ def print_results(
         f"{'F1':>10}"
         f"{'Support':>10}"
     )
-    print("-" * 64)  # header separator
+
+    print("-" * table_width)  # header separator
 
     # loop over the class names to generate results output
     for class_id, class_name in CLASS_NAMES.items():
@@ -358,6 +377,79 @@ def print_results(
             f"{metrics['f1'][class_id]:>10.2%}"
             f"{metrics['support'][class_id]:>10}"
         )
+    print()
+
+
+def compute_confusion_matrix(
+        logits: Tensor,
+        labels: Tensor,
+        mask: Tensor,
+) -> np.ndarray:
+    """
+    Compute the confusion matrix for a selected data split.
+
+    Args:
+        logits: Raw class logits for all graph nodes.
+        labels: Ground-truth class labels for all graph nodes.
+        mask: Boolean mask selecting the nodes to evaluate.
+
+    Returns:
+        Confusion matrix with true classes as rows and predicted classes
+        as columns.
+
+    """
+    # select predictions and targets for the requested evaluation split
+    predictions = logits[mask].argmax(dim=1)
+    targets = labels[mask]
+
+    # convert tensors for scikit-learn confusion-matrix calculation
+    return confusion_matrix(
+        targets.cpu().numpy(),
+        predictions.cpu().numpy(),
+    )
+
+
+def print_confusion_matrix(
+        model_name: str,
+        matrix: np.ndarray,
+) -> None:
+    """
+    Print a formatted confusion matrix for a prediction model.
+
+    Args:
+        model_name: Display name of the evaluated model.
+        matrix: Confusion matrix with true classes as rows and predicted
+            classes as columns.
+
+    Returns:
+        None.
+
+    """
+    # set column widths for class labels and prediction counts
+    class_width = 14
+    value_width = 12
+
+    # print table title and separator
+    print(f"\n{model_name} Confusion Matrix")
+    print("-" * (class_width + value_width * len(CLASS_NAMES)))
+
+    # print predicted classes as column headings
+    axis_label = "Actual \\ Pred."
+    print(f"{axis_label:<{class_width}}", end="")
+    for class_name in CLASS_NAMES.values():
+        print(f"{class_name:>{value_width}}", end="")
+    print()
+
+    print("-" * (class_width + value_width * len(CLASS_NAMES)))
+
+    # print each actual class and its predicted-class counts
+    for class_id, class_name in CLASS_NAMES.items():
+        print(f"{class_name:<{class_width}}", end="")
+
+        for count in matrix[class_id]:
+            print(f"{count:>{value_width}}", end="")
+
+        print()
     print()
 
 
@@ -410,6 +502,18 @@ def main():
         mask=data.test_mask,
     )
 
+    mlp_confusion = compute_confusion_matrix(
+        logits=mlp_logits,
+        labels=data.y,
+        mask=data.test_mask,
+    )
+
+    gcn_confusion = compute_confusion_matrix(
+        logits=gcn_logits,
+        labels=data.y,
+        mask=data.test_mask,
+    )
+
     # data check
     print(f"\nDataset: {dataset}\n")
     print(f"Data: {data}\n")
@@ -435,6 +539,17 @@ def main():
     print_results(
         model_name="GCN",
         metrics=gcn_metrics,
+    )
+
+    # confusion matrices
+    print_confusion_matrix(
+        model_name="MLP",
+        matrix=mlp_confusion,
+    )
+
+    print_confusion_matrix(
+        model_name="GCN",
+        matrix=gcn_confusion,
     )
 
 

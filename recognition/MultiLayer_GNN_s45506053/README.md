@@ -548,7 +548,12 @@ function, and in the data-loading and model-loading<br>functions which I had
 adapted from my earlier mlp_tuning and gcn_tuning notebook equivalents.<br>
 Provided text-output alignment suggestions for the formatting of the
 classification results tables in<br>predict.py, that I adapted for use in my
-print_results function.
+print_results function.<br>
+Provided text-output alignment suggestions for the formatting of the confusion
+matrices in<br>predict.py, that I adapted for use in my print_confusion_matrix
+function, and also, for revising table<br>separator line sizes in my
+print_results function, which I further refined to be 'exact' in terms of table
+<br> width.
 
 Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
 IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
