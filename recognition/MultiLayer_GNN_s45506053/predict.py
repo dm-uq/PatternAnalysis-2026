@@ -37,7 +37,7 @@ from torch import Tensor
 from torch_geometric.data import Data
 from torch_geometric.datasets import FacebookPagePage
 
-from dataset import add_stratified_masks, load_facebook_data
+from dataset import add_stratified_masks, load_facebook_data, CLASS_NAMES
 from modules import (
     MLPNetwork3Layer,
     GCNNetwork4Layer,
@@ -312,6 +312,55 @@ def run_inference(
     )
 
 
+def print_results(
+        model_name: str,
+        metrics: dict,
+) -> None:
+    """
+    Print formatted classification results for a prediction model.
+
+    Args:
+        model_name: Display name of the evaluated model.
+        metrics: Classification metrics produced for the model.
+
+    Returns:
+        None.
+
+    """
+    # aggregate results table
+    print(f"\n{model_name} Aggregate Test Results")
+    print("-" * 40)  # title separator
+
+    print(f"{'Accuracy:':<18}{metrics['accuracy']:.2%}")
+    print(f"{'Macro Precision:':<18}{metrics['macro_precision']:.2%}")
+    print(f"{'Macro Recall:':<18}{metrics['macro_recall']:.2%}")
+    print(f"{'Macro F1:':<18}{metrics['macro_f1']:.2%}")
+    print(f"{'Macro AUROC:':<18}{metrics['macro_auroc']:.2%}")
+
+    # per-class results table
+    print(f"\n{model_name} Per-Class Results")
+    print("-" * 64)  # title separator
+    print(
+        f"{'Class':<14}"
+        f"{'Precision':>12}"
+        f"{'Recall':>10}"
+        f"{'F1':>10}"
+        f"{'Support':>10}"
+    )
+    print("-" * 64)  # header separator
+
+    # loop over the class names to generate results output
+    for class_id, class_name in CLASS_NAMES.items():
+        print(
+            f"{class_name:<14}"
+            f"{metrics['precision'][class_id]:>12.2%}"
+            f"{metrics['recall'][class_id]:>10.2%}"
+            f"{metrics['f1'][class_id]:>10.2%}"
+            f"{metrics['support'][class_id]:>10}"
+        )
+    print()
+
+
 def main():
     """
     Main function
@@ -377,13 +426,16 @@ def main():
     print(f"MLP Logits Shape: {mlp_logits.shape}")
     print(f"GCN Logits Shape: {gcn_logits.shape}\n")
 
-    # raw classification metrics check
-    print("\nMLP Test Metrics:")
-    for key, value in mlp_metrics.items():
-        print(f"{key}: {value}")
-    print("\nGCN Test Metrics:")
-    for key, value in gcn_metrics.items():
-        print(f"{key}: {value}")
+    # formatted classification metrics check
+    print_results(
+        model_name="MLP",
+        metrics=mlp_metrics,
+    )
+
+    print_results(
+        model_name="GCN",
+        metrics=gcn_metrics,
+    )
 
 
 if __name__ == "__main__":

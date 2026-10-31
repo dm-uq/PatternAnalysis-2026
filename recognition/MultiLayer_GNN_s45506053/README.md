@@ -545,7 +545,10 @@ approach I had used in<br>dataset.py, that I adapted and implemented.<br>
 Provided the suggestions to generalise the function arguments in predict.py
 (i.e. fixed vs optional)<br>that were adopted for use in the select_device
 function, and in the data-loading and model-loading<br>functions which I had
-adapted from my earlier mlp_tuning and gcn_tuning notebook equivalents.
+adapted from my earlier mlp_tuning and gcn_tuning notebook equivalents.<br>
+Provided text-output alignment suggestions for the formatting of the
+classification results tables in<br>predict.py, that I adapted for use in my
+print_results function.
 
 Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
 IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
