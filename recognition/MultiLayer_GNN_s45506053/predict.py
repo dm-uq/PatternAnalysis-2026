@@ -42,6 +42,7 @@ from modules import (
     MLPNetwork3Layer,
     GCNNetwork4Layer,
 )
+from train import classification_metrics
 
 # CONSTANTS
 
@@ -316,14 +317,18 @@ def main():
     Main function
     :return: None
     """
+
+    # data
     dataset, data = load_prediction_data()
 
+    # models
     mlp, mlp_device = load_model(
         model_name="mlp",
         in_channels=data.num_node_features,
         out_channels=dataset.num_classes,
     )
 
+    # device
     gcn, gcn_device = load_model(
         model_name="gcn",
         in_channels=data.num_node_features,
@@ -332,6 +337,7 @@ def main():
 
     data = data.to(mlp_device)
 
+    # inference
     mlp_logits = run_inference(
         model=mlp,
         data=data,
@@ -342,14 +348,42 @@ def main():
         data=data,
     )
 
+    # metrics
+    mlp_metrics = classification_metrics(
+        logits=mlp_logits,
+        labels=data.y,
+        mask=data.test_mask,
+    )
+
+    gcn_metrics = classification_metrics(
+        logits=gcn_logits,
+        labels=data.y,
+        mask=data.test_mask,
+    )
+
+    # data check
     print(f"\nDataset: {dataset}\n")
     print(f"Data: {data}\n")
+
+    # model check
     print(f"MLP Model: {mlp}\n")
     print(f"GCN Model: {gcn}\n")
+
+    # device check
     print(f"Selected MLP Device: {mlp_device.type}")
     print(f"Selected GCN Device: {gcn_device.type}\n")
+
+    # inference check
     print(f"MLP Logits Shape: {mlp_logits.shape}")
     print(f"GCN Logits Shape: {gcn_logits.shape}\n")
+
+    # raw classification metrics check
+    print("\nMLP Test Metrics:")
+    for key, value in mlp_metrics.items():
+        print(f"{key}: {value}")
+    print("\nGCN Test Metrics:")
+    for key, value in gcn_metrics.items():
+        print(f"{key}: {value}")
 
 
 if __name__ == "__main__":
