@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Final, Literal, TypeAlias, cast
 
 import torch
+from torch import Tensor
 
 from torch_geometric.data import Data
 from torch_geometric.datasets import FacebookPagePage
@@ -267,7 +268,48 @@ def load_model(
     return model, device
 
 
-# run inference TODO
+@torch.inference_mode()
+def run_inference(
+        model: PredictionModel,
+        data: Data,
+) -> Tensor:
+    """
+    Run inference using a loaded prediction model.
+
+    Args:
+        model: Loaded MLP or GCN model in evaluation mode.
+        data: Graph data containing node features and connectivity.
+
+    Returns:
+        Raw class logits for all graph nodes.
+
+    """
+    # ensure node features are available for prediction
+    features = data.x
+
+    if features is None:
+        raise ValueError("Graph data does not contain node features.")
+
+    # perform the model-specific forward pass
+    if isinstance(model, MLPNetwork3Layer):  # mlp
+        return model(features)
+
+    if isinstance(model, GCNNetwork4Layer):  # cgn
+        edge_index = data.edge_index
+
+        if edge_index is None:
+            raise ValueError("Graph data does not contain an edge index.")
+
+        return model(
+            features,
+            edge_index,
+        )
+
+    # provided model arg is not of the correct type
+    raise TypeError(
+        f"Unsupported prediction model: {type(model).__name__}"
+    )
+
 
 def main():
     """
@@ -288,12 +330,26 @@ def main():
         out_channels=dataset.num_classes,
     )
 
+    data = data.to(mlp_device)
+
+    mlp_logits = run_inference(
+        model=mlp,
+        data=data,
+    )
+
+    gcn_logits = run_inference(
+        model=gcn,
+        data=data,
+    )
+
     print(f"\nDataset: {dataset}\n")
     print(f"Data: {data}\n")
     print(f"MLP Model: {mlp}\n")
     print(f"GCN Model: {gcn}\n")
     print(f"Selected MLP Device: {mlp_device.type}")
     print(f"Selected GCN Device: {gcn_device.type}\n")
+    print(f"MLP Logits Shape: {mlp_logits.shape}")
+    print(f"GCN Logits Shape: {gcn_logits.shape}\n")
 
 
 if __name__ == "__main__":
