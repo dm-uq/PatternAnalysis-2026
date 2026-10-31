@@ -540,6 +540,13 @@ examples I had used in data analysis exercises, previously, which<br>I then
 adapted into the classification_metrics function. Provided a temporary 'smoke
 test' for this<br>updated functionality that confirm correct functioning.
 
+Provided suggestions for pathname setting in predict.py, based on the
+approach I had used in<br>dataset.py, that I adapted and implemented.<br>
+Provided the suggestions to generalise the function arguments in predict.py
+(i.e. fixed vs optional)<br>that were adopted for use in the select_device
+function, and in the data-loading and model-loading<br>functions which I had
+adapted from my earlier mlp_tuning and gcn_tuning notebook equivalents.
+
 Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
 IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
 and LeakyReLU activations in the<br>definition of GCNModel.
