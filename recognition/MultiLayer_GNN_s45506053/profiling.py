@@ -292,3 +292,5 @@ def print_profile(
         print(f"{'Peak VRAM:':<20}N/A")  # VRAM profile not available
     else:
         print(f"{'Peak VRAM:':<20}{peak_vram:.2f} MiB")
+
+    print()  # 'border' space

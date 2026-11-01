@@ -129,6 +129,37 @@ class MLPNetwork3Layer(nn.Module):
 
         return self.lin3(x)
 
+    def extract_embeddings(
+            self,
+            x: Tensor,
+    ) -> Tensor:
+        """
+        Extract learned node embeddings from the penultimate MLP layer.
+
+        The node features are propagated through the first two MLP layers,
+        reproducing the learned latent node representation immediately before
+        the final mapping to class logits would ordinarily occur.
+
+        Args:
+            x: Node-feature tensor of shape `(num_nodes, in_channels)`.
+
+        Returns:
+            Learned latent representation `z` of shape
+            `(num_nodes, hidden_channels)`.
+
+        """
+        # reproduce the trained forward path until the final classifier stage
+        x = self.lin1(x)
+        x = self.act1(x)
+        x = self.dropout1(x)
+
+        # retrieve the learned representation
+        z = self.lin2(x)
+        z = self.act2(z)
+        z = self.dropout2(z)
+
+        return z
+
 
 # REF: Adapted from the standard PyTorch `nn.Module` pattern demonstrated in
 #  the PyTorch "Build the Neural Network" tutorial [1].
@@ -581,6 +612,43 @@ class GCNNetwork4Layer(nn.Module):
         x = self.dropout3(x)
 
         return self.conv4(x, edge_index)
+
+    def extract_embeddings(
+            self,
+            x: Tensor,
+            edge_index: Tensor
+    ) -> Tensor:
+        """
+        Extract learned node embeddings from the penultimate GCN layer.
+
+        The input graph is propagated through the first three GCN layers,
+        reproducing the learned latent node representation immediately before
+        the final mapping to class logits would ordinarily occur.
+
+        Args:
+            x: Node-feature tensor of shape `(num_nodes, in_channels)`.
+            edge_index: Graph connectivity tensor of shape `(2, num_edges)`.
+
+        Returns:
+            Learned latent representation `z` of shape
+            `(num_nodes, hidden_channels)`.
+
+        """
+        # reproduce the trained forward path until the final classifier stage
+        x = self.conv1(x, edge_index)
+        x = self.act1(x)
+        x = self.dropout1(x)
+
+        x = self.conv2(x, edge_index)
+        x = self.act2(x)
+        x = self.dropout2(x)
+
+        # retrieve the learned representation
+        z = self.conv3(x, edge_index)
+        z = self.act3(z)
+        z = self.dropout3(z)
+
+        return z
 
 
 # REF: Adapted from the PyG GCNConv API demonstrated in [2].

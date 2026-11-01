@@ -540,6 +540,10 @@ examples I had used in data analysis exercises, previously, which<br>I then
 adapted into the classification_metrics function. Provided a temporary 'smoke
 test' for this<br>updated functionality that confirm correct functioning.
 
+Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
+IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
+and LeakyReLU activations in the<br>definition of GCNModel.
+
 Provided suggestions for pathname setting in predict.py, based on the
 approach I had used in<br>dataset.py, that I adapted and implemented.<br>
 Provided the suggestions to generalise the function arguments in predict.py
@@ -566,9 +570,12 @@ Provided text-output alignment suggestions for the formatting of the
 inference profiling results tables<br>in profiling.py, that I adapted for use
 in my print_profile function.<br>
 
-Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
-IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
-and LeakyReLU activations in the<br>definition of GCNModel.
+Provided a suggested approach for obtaining latent representation data from the
+frozen-model types,<br>in modules.py, that I adapted to create the
+extract_embeddings functions, rather than modify their<br>existing forward
+functions. This was necessary because this data was not readily accessible,
+unlike<br>in other packages I have used previously (e.g. Scanpy, for
+Bioinformatics).
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.

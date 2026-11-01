@@ -529,6 +529,20 @@ def main():
         device=gcn_device,
     )
 
+    # extract embedding data
+    mlp.eval()
+    gcn.eval()
+
+    with torch.inference_mode():
+        mlp_embeddings = mlp.extract_embeddings(
+            data.x,
+        )
+
+        gcn_embeddings = gcn.extract_embeddings(
+            data.x,
+            data.edge_index,
+        )
+
     # data check
     print(f"\nDataset: {dataset}\n")
     print(f"Data: {data}\n")
@@ -570,6 +584,10 @@ def main():
     # profiling
     print_profile("MLP", mlp_profile)
     print_profile("GCN", gcn_profile)
+
+    # embedding data
+    print(f"MLP Embeddings: {mlp_embeddings.shape}")
+    print(f"GCN Embeddings: {gcn_embeddings.shape}\n")
 
 
 if __name__ == "__main__":
