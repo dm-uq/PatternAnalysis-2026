@@ -577,6 +577,12 @@ functions. This was necessary because this data was not readily accessible,
 unlike<br>in other packages I have used previously (e.g. Scanpy, for
 Bioinformatics).
 
+Provided an initial adaptation of my existing UMAP plotting functionality from
+my unpublished<br>COMP3710 Assignment 2 VAE UMAP plotting (Semester 2, 2026),
+for the visualisation.py functions<br>reduce_embeddings and plot_embeddings. I
+refined these adaptations to allow optional plot saving,<br>and to align with
+my preferred method of 'plot code sequencing' and plot style.
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 

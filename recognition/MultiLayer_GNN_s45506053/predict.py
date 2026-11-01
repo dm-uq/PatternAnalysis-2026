@@ -31,6 +31,7 @@ References: None
 from pathlib import Path
 from typing import Final, Literal, TypeAlias, cast
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
@@ -40,8 +41,9 @@ from torch_geometric.datasets import FacebookPagePage
 
 from dataset import add_stratified_masks, load_facebook_data, CLASS_NAMES
 from modules import MLPNetwork3Layer, GCNNetwork4Layer
-from train import classification_metrics
 from profiling import profile_model, print_profile
+from train import classification_metrics
+from visualisation import reduce_embeddings, plot_embeddings
 
 # CONSTANTS
 
@@ -51,6 +53,7 @@ PredictionModel: TypeAlias = (MLPNetwork3Layer | GCNNetwork4Layer)
 
 PROJECT_DIR: Final[Path] = Path(__file__).resolve().parent
 CHECKPOINTS_DIR: Final[Path] = PROJECT_DIR / "checkpoints"
+IMAGES_DIR: Final[Path] = PROJECT_DIR / "images" / "evaluation"
 
 MLP_CHECKPOINT: Final[Path] = CHECKPOINTS_DIR / "mlp_final.pt"
 GCN_CHECKPOINT: Final[Path] = CHECKPOINTS_DIR / "gcn_final.pt"
@@ -543,6 +546,15 @@ def main():
             data.edge_index,
         )
 
+    # reduce embeddings
+    mlp_embedding_2d = reduce_embeddings(
+        embeddings=mlp_embeddings,
+    )
+
+    gcn_embedding_2d = reduce_embeddings(
+        embeddings=gcn_embeddings,
+    )
+
     # data check
     print(f"\nDataset: {dataset}\n")
     print(f"Data: {data}\n")
@@ -585,9 +597,38 @@ def main():
     print_profile("MLP", mlp_profile)
     print_profile("GCN", gcn_profile)
 
-    # embedding data
+    # embedding data check
     print(f"MLP Embeddings: {mlp_embeddings.shape}")
     print(f"GCN Embeddings: {gcn_embeddings.shape}\n")
+
+    # reduced embeddings check
+    print(f"MLP UMAP: {mlp_embedding_2d.shape}")
+    print(f"GCN UMAP: {gcn_embedding_2d.shape}")
+
+    # create save location for the embedding plots
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # UMAP plotting check
+    # Note: plot saving/over-writing is currently 'on'!
+    mlp_figure = plot_embeddings(
+        embedding_2d=mlp_embedding_2d,
+        labels=data.y,
+        model_name="MLP",
+        output_path=IMAGES_DIR / "mlp_final_umap.png",
+    )
+
+    gcn_figure = plot_embeddings(
+        embedding_2d=gcn_embedding_2d,
+        labels=data.y,
+        model_name="GCN",
+        output_path=IMAGES_DIR / "gcn_final_umap.png",
+    )
+
+    # display UMAP plots
+    plt.show()
+
+    plt.close(mlp_figure)
+    plt.close(gcn_figure)
 
 
 if __name__ == "__main__":
