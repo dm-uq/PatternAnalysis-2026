@@ -39,8 +39,9 @@ from torch_geometric.data import Data
 from torch_geometric.datasets import FacebookPagePage
 
 from dataset import add_stratified_masks, load_facebook_data, CLASS_NAMES
-from modules import (MLPNetwork3Layer, GCNNetwork4Layer)
+from modules import MLPNetwork3Layer, GCNNetwork4Layer
 from train import classification_metrics
+from profiling import profile_model, print_profile
 
 # CONSTANTS
 
@@ -476,6 +477,7 @@ def main():
         out_channels=dataset.num_classes,
     )
 
+    # move graph tensors to the selected inference device
     data = data.to(mlp_device)
 
     # inference
@@ -512,6 +514,19 @@ def main():
         logits=gcn_logits,
         labels=data.y,
         mask=data.test_mask,
+    )
+
+    # profile final models
+    mlp_profile = profile_model(
+        model=mlp,
+        data=data,
+        device=mlp_device,
+    )
+
+    gcn_profile = profile_model(
+        model=gcn,
+        data=data,
+        device=gcn_device,
     )
 
     # data check
@@ -551,6 +566,10 @@ def main():
         model_name="GCN",
         matrix=gcn_confusion,
     )
+
+    # profiling
+    print_profile("MLP", mlp_profile)
+    print_profile("GCN", gcn_profile)
 
 
 if __name__ == "__main__":

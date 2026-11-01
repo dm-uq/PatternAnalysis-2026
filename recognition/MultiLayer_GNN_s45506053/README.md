@@ -555,6 +555,17 @@ function, and also, for revising table<br>separator line sizes in my
 print_results function, which I further refined to be 'exact' in terms of table
 <br> width.
 
+Provided suggested values for the number of warm-up runs, number of timed-runs,
+and for further<br>synchronisation to ensure clean timing, for my
+measure_inference_latency function in profiling.py,<br>adopted after reviewing
+PyTorch CUDA documentation and supporting web search results.<br>
+Provided a suggestion to store model output, ensuring VRAM measurement was
+fully complete,<br>for my measure_peak_vram function in profiling.py, which I
+implemented after adaptation to satisfy<br>a non-use warning.<br>
+Provided text-output alignment suggestions for the formatting of the
+inference profiling results tables<br>in profiling.py, that I adapted for use
+in my print_profile function.<br>
+
 Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
 IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
 and LeakyReLU activations in the<br>definition of GCNModel.
