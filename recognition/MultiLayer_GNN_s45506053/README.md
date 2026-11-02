@@ -584,7 +584,24 @@ refined these adaptations to allow optional plot saving,<br>and to align with
 my preferred method of 'plot code sequencing' and plot style.
 
 Provided Markdown formatting for the 'Frozen Models' table data in the
-final_evaluation notebook. 
+final_evaluation notebook.
+
+Suggested the use of .double() rather than float32 in the confidence.py
+function<br>extract_confidence_data, which was adopted, resolving an issue with
+very confident GCN<br>predictions 'saturating' to `1.0` and making
+error-analysis misleading.<br>
+Provided a suggested refactoring to improve my filtering procedure in the
+confidence.py function<br>select_reject_threshold, which was adapted and
+further refined for use, improving code/procedure<br>efficiency and
+readability. This also included the use of `np.nan` and .isnan() to resolve an
+<br>initialisation-related warning.<br>
+Provided a suggested refactoring to improve my procedure for obtaining
+error-counts and selective<br>accuracy values in the confidence.py function
+evaluate_rejection_rule, which was adopted, improving<br>efficiency and
+readability.<br>
+Provided text-output alignment suggestions for the formatting of the
+reject-option results table<br>in the confidence.py function
+print_reject_results that I adapted for use.<br>
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
