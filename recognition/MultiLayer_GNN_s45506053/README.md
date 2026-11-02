@@ -583,6 +583,9 @@ for the visualisation.py functions<br>reduce_embeddings and plot_embeddings. I
 refined these adaptations to allow optional plot saving,<br>and to align with
 my preferred method of 'plot code sequencing' and plot style.
 
+Provided Markdown formatting for the 'Frozen Models' table data in the
+final_evaluation notebook. 
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 
