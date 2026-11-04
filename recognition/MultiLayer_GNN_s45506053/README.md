@@ -349,42 +349,120 @@ selection, the<br>test labels remain withheld until final evaluation.
 ## 4. Methods
 ### 4.1 Baseline Model
 
-The baseline is a feature-only MLP using the 128-dimensional node features
-without graph<br>connectivity.<br>
-The model consists of a 128 → 64 linear layer, a ReLU activation, dropout
-(`p=0.5`), and a 64 → 4<br>output layer producing raw class logits.
+The baseline is a feature-only Multi-Layer Perceptron (MLP) using each node's
+128-dimensional feature vector without graph connectivity. The final
+architecture contains three linear layers (128 → 64 → 64 → 4), with ReLU
+activation and dropout after each hidden layer. The output layer produces four
+raw class logits.
+
+The MLP was independently tuned, rather than left at its initial configuration,
+providing a competitive feature-only baseline for assessing the benefits of
+incorporating graph structure.
 
 ### 4.2 Graph Convolutional Network (GCN)
 
-The graph model is a two-layer Graph Convolutional Network (GCN). It retains
-the same<br>128 → 64 → 4 dimensional structure, ReLU activation, and dropout
-(`p=0.5`) used by the MLP<br>baseline, but replaces the linear layers with
-PyG `GCNConv` layers.
+The final graph-aware model is a four-layer Graph Convolutional Network (GCN),
+implemented using PyTorch Geometric `GCNConv` layers. Its dimensions are 128 →
+64 → 64 → 64 → 4, with ReLU activation and dropout after the first three
+graph-convolution layers.
 
-Each `GCNConv` layer performs neighbourhood aggregation through the graph
-edges together with a<br>learned feature transformation, allowing each node
-representation to incorporate information from<br>connected neighbours.
-With two graph-convolution layers, the model can incorporate information<br>from
-neighbourhoods extending approximately two hops from each node.
+Unlike the MLP, each `GCNConv` layer combines a learned feature transformation
+with degree-normalised neighbourhood aggregation. Successive layers propagate
+information across increasingly distant neighbours, allowing the four-layer
+model to incorporate information from nodes up to four hops away when
+predicting a node's class.
 
 ### 4.3 Training Procedure
 
-The MLP and GCN are both trained using cross-entropy loss and the Adam
-optimiser (`lr=0.001`,<br>`weight_decay=0`) under the same 60/20/20 stratified
-split. Both models use a hidden width of 64<br>and dropout probability of 0.5.
+Both models use full-batch training with cross-entropy loss and the Adam
+optimiser, under the same stratified 60/20/20 node split (seed 808). Only
+training-node labels contribute to optimisation.
 
-Training is full-batch, with only training-node labels contributing to
-optimisation. Validation is<br>performed after each training epoch, and the
-checkpoint with the minimum validation loss is retained.
+Validation loss and accuracy are evaluated after every epoch. Each run retains
+the model checkpoint with the minimum validation cross-entropy loss, rather
+than the final epoch. Training and validation histories are recorded for
+subsequent analysis.
 
-The MLP training budget was bounded at 2,000 epochs. An initial 2,000-epoch GCN
-run attained its<br>lowest validation loss at the final epoch, so the budget
-was subsequently extended to 4,000 epochs.<br>This provided sufficient margin
-to capture the later training behaviour and the observed<br>validation-loss
-minimum.
+The final selected configurations are:
+
+| Setting             |        MLP |        GCN |
+|---------------------|-----------:|-----------:|
+| Layers              |          3 |          4 |
+| Hidden width        |         64 |         64 |
+| Activation          |       ReLU |       ReLU |
+| Dropout             |       0.50 |       0.55 |
+| Learning rate       |     `1e-3` |     `1e-3` |
+| Weight decay        |     `5e-4` |     `5e-5` |
+| Optimiser           |       Adam |       Adam |
+| Selected checkpoint | Epoch 1653 | Epoch 1367 |
 
 ### 4.4 Confidence / Calibration Method
-### 4.5 Reject-Option Decision Rule
+
+Both model families were tuned separately through a sequential, limited
+investigation of network depth, dropout, weight decay, hidden width, learning
+rate, and activation function. All candidates used the same data split and
+seed.
+
+Depth was investigated first because it changes model capacity and, for the
+GCN model, its graph receptive field. Increasing MLP depth from two to three
+layers improved validation performance, while further depth provided no
+benefit. GCN performance improved from two to four layers, but regressed
+slightly at five layers. The three-layer MLP and four-layer GCN were therefore
+retained for subsequent refinement.
+
+Candidate selection considered validation cross-entropy, accuracy, macro-F1,
+macro-AUROC, and per-class performance, rather than relying on a single metric.
+Training cost and convergence behaviour also informed decisions where relevant.
+Neither ELU nor LeakyReLU provided a consistent advantage over ReLU.
+
+Most candidates used a maximum of 2,000 training epochs. Competitive
+configurations whose best validation loss occurred near this boundary were
+extended to 4,000 epochs, to check whether further training could yield a lower
+validation loss. Clearly weaker candidates were not routinely extended.
+
+### 4.5 Confidence Measure
+
+Prediction confidence is measured using the **maximum softmax response**, i.e.
+the largest softmax probability assigned to any class. This provides a simple
+confidence score for ranking predictions.
+
+The maximum softmax response is used to rank predictions by confidence, rather
+than as a calibrated estimate of their probability of being correct. No
+additional probability calibration was performed.
+
+For numerical analysis, logits are converted to double precision before
+applying softmax, reducing artificial saturation of highly confident
+predictions at exactly `1.0`. This applies only to post-hoc confidence
+calculations and not training, model weights, or predicted classes.
+
+A confidence-based reject-option rule is used to investigate the scope for
+partial automation, with low-confidence predictions designated for human
+review.
+
+For each model, a global threshold, $\tau$, is selected using validation data
+only. Predictions with confidence greater than or equal to $\tau$ are
+accepted automatically.
+
+Coverage and accepted-prediction risk are defined as:
+
+$$
+\text{Coverage} =
+\frac{\text{Accepted predictions}}{\text{All predictions}}
+$$
+
+$$
+\text{Risk} =
+\frac{\text{Incorrect accepted predictions}}{\text{Accepted predictions}}
+$$
+
+The selected threshold maximises coverage subject to an empirical
+accepted-prediction risk of **at most 1%**. It is then frozen and applied,
+unchanged, to the held-out test set.
+
+This 1% constraint is an operational prototype criterion, not a statistical
+guarantee of future performance. The procedure allows comparison of the models'
+ability to automate classification while maintaining a low observed error rate
+among accepted predictions.
 
 ## 5. Experimental Results
 ### 5.1 Training Behaviour
@@ -500,125 +578,129 @@ loading and preprocessing are performed through `dataset.py`.
 ### ChatGPT:
 
 Produced an initial README 'skeleton' from my own Assessment
-Specification-derived checklist txt<br>file.
+Specification-derived checklist txt file.
 
 Adapted the course-linked data source approach to data file preparation, to
-inform the<br>prepare_facebook_data compatibility script for converting the
-source data to the same schema used<br>in PyG examples.<br>
+inform the prepare_facebook_data compatibility script for converting the source
+data to the same schema used in PyG examples.<br>
 Produced a 'terminal py script' command to obtain the correct source data types
-for type annotations,<br>within the project code.
+for type annotations, within the project code.
 
 Provided cast and assertion suggestions that were adapted for
-add_stratified_masks, to allow for the<br>resolution of IDE type-checker
-warnings, without compromising on the project's 'rigorous' typing<br>
+add_stratified_masks, to allow for the resolution of IDE type-checker warnings,
+without compromising on the project's 'rigorous' typing 
 conventions.
 
 Provided feasible argument typing suggestions for the train_mlp_epoch and
-evaluate_mlp function<br>signatures, from which, I chose those the most
+evaluate_mlp function signatures, from which, I chose those the most
 appropriate for the project's typing conventions.
 
 Provided suggestions for harmonising the current plotting approach, based on
-examples I had used<br>in data analysis exercises, previously, which I then
-adapted into a coherent notebook plotting style<br>for the project.
+examples I had used in data analysis exercises, previously, which I then
+adapted into a coherent notebook plotting style for the project.
 
 Provided suggestions for persisting experiment configuration, training history,
-selected model<br>checkpoints, and plot outputs, which I adapted for the MLP
-and GCN experiment notebooks.
+selected model checkpoints, and plot outputs, which I adapted for the MLP and
+GCN experiment notebooks.
 
 Checked my train.py functionality-generalising refactor for 'hangover errors',
-and suggested the use<br>of a forward-pass lambda function parameter, which I
+and suggested the use of a forward-pass lambda function parameter, which I
 adopted.
 
 Checked my train.py train_gcn_model and train/val plotting functionality
-refactors for 'hangover<br>errors', and suggested the use of an assertion to
-guard against potential 'div by 0' errors, which I<br>adopted.
+refactors for 'hangover errors', and suggested the use of an assertion to guard
+against potential 'div by 0' errors, which I adopted.
 
 Provided suggestions for refactoring the current evaluation approach into
-train.py, including the<br>incorporation of additional required project metrics
-(e.g. Macro F1, AUROC) that will also inform<br>hyperparameter tuning, based on
-examples I had used in data analysis exercises, previously, which<br>I then
-adapted into the classification_metrics function. Provided a temporary 'smoke
-test' for this<br>updated functionality that confirm correct functioning.
+train.py, including the incorporation of additional required project metrics
+(e.g. Macro F1, AUROC) that will also inform hyperparameter tuning, based on
+examples I had used in data analysis exercises, previously, which I then
+adapted into the classification_metrics function.<br>
+Provided a temporary 'smoke test' for this updated functionality that confirm
+correct functioning.
 
 Suggested the use of TypeAlias in train.py (which was adopted) to resolve an
-IDE type-checker<br>warning following inclusion of the 'tuning models' with ELU
-and LeakyReLU activations in the<br>definition of GCNModel.
+IDE type-checker warning following inclusion of the 'tuning models' with ELU
+and LeakyReLU activations in the definition of GCNModel.
 
-Provided suggestions for pathname setting in predict.py, based on the
-approach I had used in<br>dataset.py, that I adapted and implemented.<br>
+Provided suggestions for pathname setting in predict.py, based on the approach
+I had used in dataset.py, that I adapted and implemented.<br>
 Provided the suggestions to generalise the function arguments in predict.py
-(i.e. fixed vs optional)<br>that were adopted for use in the select_device
-function, and in the data-loading and model-loading<br>functions which I had
+(i.e. fixed vs optional) that were adopted for use in the select_device
+function, and in the data-loading and model-loading functions which I had
 adapted from my earlier mlp_tuning and gcn_tuning notebook equivalents.<br>
 Provided text-output alignment suggestions for the formatting of the
-classification results tables in<br>predict.py, that I adapted for use in my
+classification results tables in predict.py, that I adapted for use in my
 print_results function.<br>
 Provided text-output alignment suggestions for the formatting of the confusion
-matrices in<br>predict.py, that I adapted for use in my print_confusion_matrix
-function, and also, for revising table<br>separator line sizes in my
-print_results function, which I further refined to be 'exact' in terms of table
-<br> width.
+matrices in predict.py, that I adapted for use in my print_confusion_matrix
+function, and also, for revising table separator line sizes in my print_results
+function, which I further refined to be 'exact' in terms of table width.
 
 Provided suggested values for the number of warm-up runs, number of timed-runs,
-and for further<br>synchronisation to ensure clean timing, for my
-measure_inference_latency function in profiling.py,<br>adopted after reviewing
+and for further synchronisation to ensure clean timing, for my
+measure_inference_latency function in profiling.py, adopted after reviewing
 PyTorch CUDA documentation and supporting web search results.<br>
 Provided a suggestion to store model output, ensuring VRAM measurement was
-fully complete,<br>for my measure_peak_vram function in profiling.py, which I
-implemented after adaptation to satisfy<br>a non-use warning.<br>
-Provided text-output alignment suggestions for the formatting of the
-inference profiling results tables<br>in profiling.py, that I adapted for use
-in my print_profile function.<br>
+fully complete, for my measure_peak_vram function in profiling.py, which I
+implemented after adaptation to satisfy a non-use warning.<br>
+Provided text-output alignment suggestions for the formatting of the inference
+profiling results tables in profiling.py, that I adapted for use in my
+print_profile function.<br>
 
 Provided a suggested approach for obtaining latent representation data from the
-frozen-model types,<br>in modules.py, that I adapted to create the
-extract_embeddings functions, rather than modify their<br>existing forward
+frozen-model types, in modules.py, that I adapted to create the
+extract_embeddings functions, rather than modify their existing forward
 functions. This was necessary because this data was not readily accessible,
-unlike<br>in other packages I have used previously (e.g. Scanpy, for
+unlike in other packages I have used previously (e.g. Scanpy, for
 Bioinformatics).
 
 Provided an initial adaptation of my existing UMAP plotting functionality from
-my unpublished<br>COMP3710 Assignment 2 VAE UMAP plotting (Semester 2, 2026),
-for the visualisation.py functions<br>reduce_embeddings and plot_embeddings. I
-refined these adaptations to allow optional plot saving,<br>and to align with
-my preferred method of 'plot code sequencing' and plot style.
+my unpublished COMP3710 Assignment 2 VAE UMAP plotting (Semester 2, 2026), for
+the visualisation.py functions reduce_embeddings and plot_embeddings. I refined
+these adaptations to allow optional plot saving, and to align with my preferred
+method of 'plot code sequencing' and plot style.
 
 Provided Markdown formatting for the 'Frozen Models' table data in the
 final_evaluation notebook.
 
 Suggested the use of .double() rather than float32 in the confidence.py
-function<br>extract_confidence_data, which was adopted, resolving an issue with
-very confident GCN<br>predictions 'saturating' to `1.0` and making
-error-analysis misleading.<br>
+function extract_confidence_data, which was adopted, resolving an issue with
+very confident GCN predictions 'saturating' to `1.0` and making error-analysis
+misleading.<br>
 Provided a suggested refactoring to improve my filtering procedure in the
-confidence.py function<br>select_reject_threshold, which was adapted and
-further refined for use, improving code/procedure<br>efficiency and
-readability. This also included the use of `np.nan` and .isnan() to resolve an
-<br>initialisation-related warning.<br>
+confidence.py function select_reject_threshold, which was adapted and further
+refined for use, improving code/procedure efficiency and readability. This also
+included the use of `np.nan` and .isnan() to resolve an initialisation-related
+warning.<br>
 Provided a suggested refactoring to improve my procedure for obtaining
-error-counts and selective<br>accuracy values in the confidence.py function
-evaluate_rejection_rule, which was adopted, improving<br>efficiency and
+error-counts and selective accuracy values in the confidence.py function
+evaluate_rejection_rule, which was adopted, improving efficiency and
 readability.<br>
 Provided text-output alignment suggestions for the formatting of the
-reject-option results table<br>in the confidence.py function
-print_reject_results that I adapted for use.<br>
+reject-option results table in the confidence.py function print_reject_results
+that I adapted for use.<br>
 
 Provided a refactor suggestion ('method chaining') to improve my procedure for
-obtaining node<br>indices in the confidence.py function build_failure_data,
-which was adopted, improving efficiency and<br>readability.<br>
+obtaining node indices in the confidence.py function build_failure_data, which
+was adopted, improving efficiency and readability.<br>
 Provided suggestions for generalised indexing approaches in the
-final_evaluation notebook, which I<br>adapted in order to retrieve and examine
-particular examples of failure case classes that I had<br>identified as
+final_evaluation notebook, which I adapted in order to retrieve and examine
+particular examples of failure case classes that I had identified as
 'interesting', beforehand. Context: previous suggested indexing refactors had
-already<br>proven to be more efficient than the indexing code I had been
+already proven to be more efficient than the indexing code I had been
 employing.<br>
 Provided an adaptation of the immediate-neighbour inspection code in the
-final_evaluation notebook,<br>to retrieve 'two-hop' neighbour classes for a
-particular failure case, which I refined and adopted, for<br>
-expediency. 
+final_evaluation notebook, to retrieve 'two-hop' neighbour classes for a
+particular failure case, which I refined and adopted, for expediency. 
 
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
-README updates,<br>prior to the final refinements by myself.
+README updates, prior to the final refinements by myself.
+
+Provided Markdown formatting recommendations to improve readability; some of
+which were adopted for use (after further refinement, in some cases),
+including selectively-used emphasis tags and the removal of some
+'manually-inserted' break tags from earlier README material.
 
 ## 12. References
 
