@@ -603,6 +603,20 @@ Provided text-output alignment suggestions for the formatting of the
 reject-option results table<br>in the confidence.py function
 print_reject_results that I adapted for use.<br>
 
+Provided a refactor suggestion ('method chaining') to improve my procedure for
+obtaining node<br>indices in the confidence.py function build_failure_data,
+which was adopted, improving efficiency and<br>readability.<br>
+Provided suggestions for generalised indexing approaches in the
+final_evaluation notebook, which I<br>adapted in order to retrieve and examine
+particular examples of failure case classes that I had<br>identified as
+'interesting', beforehand. Context: previous suggested indexing refactors had
+already<br>proven to be more efficient than the indexing code I had been
+employing.<br>
+Provided an adaptation of the immediate-neighbour inspection code in the
+final_evaluation notebook,<br>to retrieve 'two-hop' neighbour classes for a
+particular failure case, which I refined and adopted, for<br>
+expediency. 
+
 Ensured correctness of the Markdown formatting 'syntax' for my progressive
 README updates,<br>prior to the final refinements by myself.
 

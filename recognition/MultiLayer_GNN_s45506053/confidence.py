@@ -212,3 +212,43 @@ def print_reject_results(
     )
     print(f"{'Accepted risk:':<22}{results['risk']:>10.3%}")
     print()
+
+
+def build_failure_data(
+        mask: Tensor,
+        mlp_data: dict[str, np.ndarray],
+        gcn_data: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
+    """
+    Combine model confidence results with original graph node indices, for
+    Failure Case Autopsy.
+
+    Args:
+        mask: Boolean mask identifying the evaluated graph split.
+        mlp_data: Confidence results for the MLP.
+        gcn_data: Confidence results for the GCN.
+
+    Returns:
+        Evaluation data for each node, including its original graph index,
+        target, model predictions, confidence scores, and correctness.
+
+    """
+    # get original graph node indices
+    node_indices = (
+        mask
+        .nonzero(as_tuple=False)
+        .flatten()
+        .cpu()
+        .numpy()
+    )
+
+    return {
+        "node_index": node_indices,
+        "target": mlp_data["target"],
+        "mlp_prediction": mlp_data["prediction"],
+        "mlp_confidence": mlp_data["confidence"],
+        "mlp_correct": mlp_data["correct"],
+        "gcn_prediction": gcn_data["prediction"],
+        "gcn_confidence": gcn_data["confidence"],
+        "gcn_correct": gcn_data["correct"],
+    }
