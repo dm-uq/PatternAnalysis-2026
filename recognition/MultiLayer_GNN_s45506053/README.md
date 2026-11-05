@@ -44,6 +44,7 @@ preparation and model training through to evaluation and confidence-based
 classification.
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 210, "minNodeWidth": 180}}}%%
 flowchart TD
     A["Facebook Page-Page Network<br/>Node features and graph connections"]
     B["Stratified train / validation / test split<br/>60 / 20 / 20"]
