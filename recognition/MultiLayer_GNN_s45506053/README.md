@@ -611,10 +611,81 @@ themselves, establish how the approach would scale to substantially larger
 networks. The operational implications are considered in Sections 7 and 8.
 
 ## 6. Failure Case Analysis
-### 6.1 Failure Case 1
-### 6.2 Failure Case 2
-### 6.3 Failure Case 3
-### 6.4 Failure Case 4
+
+Four representative nodes from the held-out test set were selected to
+investigate contrasting MLP and GCN failure patterns. Predictions,
+maximum-softmax confidence scores, and local graph neighbourhoods were examined
+to identify potential sources of misclassification.
+
+Neighbour class labels were inspected only during post-hoc analysis and were
+not supplied to the models during training or message passing.
+
+| Node (true class)        | MLP prediction (confidence) | GCN prediction (confidence) | Immediate neighbourhood |
+|--------------------------|-----------------------------|-----------------------------|-------------------------|
+| **293** (`company`)      | `company` (0.999999)        | `government` (0.999994)     | 56 of 59 `government`   |
+| **15875** (`politician`) | `company` (0.348136)        | `tvshow` (0.386059)         | 2 of 2 `politician`     |
+| **4118** (`politician`)  | `government` (0.999909)     | `politician` (0.997871)     | 34 of 34 `politician`   |
+| **9939** (`tvshow`)      | `government` (0.984970)     | `government` (0.999873)     | 63 of 66 `government`   |
+
+### 6.1 Contrasting Effects of Graph Context
+
+**Node 293** illustrates a case where graph context appears misleading. The MLP
+correctly predicts `company` with very high confidence, while the GCN
+incorrectly predicts `government`, also with very high confidence. Of the 59
+nodes identified in its immediate neighbourhood, 56 are labelled `government`,
+suggesting that neighbourhood aggregation contributed to the incorrect GCN
+prediction.
+
+**Node 4118** demonstrates the opposite pattern. The MLP incorrectly predicts
+`government` with confidence 0.999909, whereas the GCN correctly predicts
+`politician`. All 34 nodes identified in its immediate neighbourhood are
+labelled `politician`, suggesting that graph connectivity provided useful
+information that helped the GCN avoid the MLP's highly confident error.
+
+Together, these cases illustrate how graph context can improve classification
+while also introducing errors when local connectivity is inconsistent with a
+node's true class.
+
+### 6.2 Low-Confidence Ambiguity
+
+**Node 15875** is incorrectly classified by both models, but with low
+confidence. Its immediate neighbourhood contains only two `politician`-labelled
+nodes, consistent with the true class. An additional two-hop inspection
+identified six further nodes: four `politician`, one `government`, and one
+`company`.
+
+Neither neighbourhood inspection provides an obvious explanation for the GCN's
+incorrect `tvshow` prediction. The case remains ambiguous at this level of
+analysis, although both models correctly designate it for human review under
+their selected confidence thresholds.
+
+### 6.3 Shared High-Confidence Failure
+
+**Node 9939** is incorrectly classified as `government` by both models, despite
+its true class being `tvshow`. Its immediate neighbourhood is overwhelmingly
+`government` (63 of 66 nodes), consistent with the incorrect predictions.
+
+The GCN's confidence of 0.999873 exceeds its selected acceptance threshold, so
+this error would be automatically accepted. By contrast, the MLP's confidence
+of 0.984970 falls below its stricter threshold, and the prediction would be
+referred for review.
+
+This case demonstrates that the additional graph information does not always
+improve classification, and that highly confident incorrect predictions can
+still pass the reject-option rule.
+
+### 6.4 Failure Analysis Summary
+
+These cases support the broader finding that graph connectivity is beneficial
+overall, but can be misleading for individual nodes. They also illustrate the
+distinction between low-confidence errors, which are successfully routed for
+review, and high-confidence errors that can remain undetected by the selected
+reject-option rule.
+
+The neighbourhood observations suggest possible explanations for several
+failures, but do not establish their precise causes. More detailed analysis of
+learned features and multi-hop message passing would be required to investigate
+these mechanisms further.
 
 ## 7. Discussion
 ### 7.1 Does Graph Context Improve Classification?
@@ -772,6 +843,12 @@ Provided Markdown formatting recommendations to improve readability; some of
 which were adopted for use (after further refinement, in some cases),
 including selectively-used emphasis tags and the removal of some
 'manually-inserted' break tags from earlier README material.
+
+Retrieved the failure case numerical values from the final_evaluation
+notebook and presented them in Markdown table format, for expediency. These
+were adopted for Section 6 of the README after manual verification of all
+'transcribed' values and some correction of the table formatting to improve
+presentation.
 
 ## 12. References
 
