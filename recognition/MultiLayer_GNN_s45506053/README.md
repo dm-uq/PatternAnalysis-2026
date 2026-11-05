@@ -1162,10 +1162,14 @@ existing report sections. I reviewed and refined the text and diagram for
 accuracy and consistency with the project. Context: The material in this
 section is derived from my pre-existing README section.
 
-Provided a revised drafts Sections 12 (References) and based on my completed
+Provided a revised draft of Section 12 (References) based on my completed
 project code and notebooks. These were adopted for use after I had reviewed and
 refined the redraft for accuracy and consistency with the implemented project
 workflow, and performed some correction of the referencing formats.
+
+Provided an initial draft of the GitHub pull request title and description,
+based on my completed project implementation and README. I reviewed and refined
+the proposed content before submission.
 
 ## 12. References
 
