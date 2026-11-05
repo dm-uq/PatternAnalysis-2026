@@ -3,11 +3,13 @@
 ### Derek McKinney (dm-uq), SN: 45506053
 
 ## 1. Project Overview
+
 ### 1.1 Problem and Intended User
 ### 1.2 Algorithm / Working Principle
 ### 1.3 Project Figure / Overview Diagram
 
 ## 2. Feasibility Review
+
 ### 2.1 User Need, Scope and Acceptance Criteria
 
 The intended user is a social-network analyst or reviewer responsible for
@@ -341,6 +343,7 @@ drive optimisation, and validation labels support model selection, the test
 labels remain withheld until final evaluation.
 
 ## 4. Methods
+
 ### 4.1 Baseline Model
 
 The baseline is a feature-only Multi-Layer Perceptron (MLP) using each node's
@@ -459,6 +462,7 @@ ability to automate classification while maintaining a low observed error rate
 among accepted predictions.
 
 ## 5. Experimental Results
+
 ### 5.1 Training Behaviour
 
 The final three-layer MLP attained a minimum validation cross-entropy loss of
@@ -688,14 +692,122 @@ learned features and multi-hop message passing would be required to investigate
 these mechanisms further.
 
 ## 7. Discussion
+
 ### 7.1 Does Graph Context Improve Classification?
+
+The GCN substantially outperformed the feature-only MLP on the held-out test
+set, improving accuracy from 82.24% to 95.26% and macro-F1 from 80.37% to
+94.95%. Improvements were observed across all four classes, with the largest F1
+gain for `politician`. The GCN's more clearly separated UMAP representations
+are consistent with these quantitative results.
+
+The graph's high edge homophily provides a plausible explanation for the
+advantage of neighbourhood aggregation. However, the failure cases demonstrate
+that graph context is not universally beneficial. For example, it appears to
+help correct the MLP's error for Node 4118, while the government-dominated
+neighbourhoods of Nodes 293 and 9939 are consistent with their incorrect GCN
+predictions. These cases illustrate how local connectivity can provide
+misleading information, despite the graph's high overall homophily.
+Additionally, the models differ in architecture and independently tuned
+hyperparameters, so the performance improvement cannot be attributed solely to
+the use of graph connectivity.
+
 ### 7.2 Does Confidence Correlate with Correctness?
+
+Maximum-softmax confidence was useful for distinguishing relatively reliable
+predictions from those requiring review. On the test set, error rates among
+accepted predictions were 1.008% for the MLP and 0.928% for the GCN, compared
+with 23.13% and 8.61%, respectively, among rejected predictions.
+
+However, confidence was not a guarantee of correctness. Several incorrect
+predictions had extremely high confidence, including the GCN failures examined
+in Section 6. Furthermore, the empirical reject-option rule does not establish
+that softmax scores are calibrated probabilities or guarantee the same error
+rate on future data. Confidence is therefore useful for prioritising human
+review, but insufficient as an unconditional measure of reliability.
+
 ### 7.3 Cost vs Operational Benefit
+
+At approximately 1% accepted-prediction risk, the GCN automatically accepted
+2,264 test predictions compared with 1,091 for the MLP. This reduced referrals
+for human review from 3,403 to 2,230 cases — a **34.5% reduction** — while
+increasing the number of incorrectly accepted predictions from 11 to 21. Before
+applying rejection, the GCN also made 585 fewer classification errors overall.
+
+The GCN required approximately 36 times the MLP's inference time and 6.2 times
+its peak allocated GPU memory. Nevertheless, the absolute full-graph inference
+times were 83.44 ms and 2.34 ms, respectively, on the tested GTX 950M. These
+measurements suggest that the computational overhead of the GCN may be
+reasonable for this graph, particularly if human review is substantially more
+expensive than inference.
+
+The operational decision therefore depends on the relative costs of
+computation, manual review and incorrectly automated classifications. This
+prototype study did not assess human-review costs or performance on
+substantially larger or frequently updated graphs.
+
 ### 7.4 Limitations
+
+The study evaluates one fixed train/validation/test split of a single, static
+Facebook network in a transductive setting. Its results do not establish
+performance on unseen networks, newly added pages or changing graph
+structures. The GCN also depends on suitable connectivity, since misleading
+neighbourhoods can produce highly confident errors.
+
+The confidence thresholds were selected using empirical validation performance,
+without explicit probability calibration or a statistical guarantee on future
+accepted-prediction risk.
+
+Finally, resource profiling measured inference on one GPU with the graph
+already available. It did not include graph construction, maintenance or the
+operational cost of human review.
 
 ## 8. Engineering Recommendation
 
+**The four-layer GCN is recommended over the feature-only MLP for a monitored,
+human-in-the-loop classification assistant.** Its substantially higher
+classification accuracy and greater selective-prediction coverage justify its
+additional computational complexity for the evaluated graph, subject to
+operational validation.
+
+The proposed operating policy uses the GCN's validation-selected
+maximum-softmax confidence threshold of **0.994863**. Predictions meeting or
+exceeding this threshold are automatically accepted, while lower-confidence
+predictions are referred to human reviewers. On the held-out test set, this
+policy accepted 50.38% of predictions with a 0.928% observed error rate among
+accepted cases. Compared with the MLP, it reduced referrals by 34.5%, at the
+expense of 10 additional incorrectly accepted predictions.
+
+The **1% accepted-error tolerance is a configurable engineering choice**, not a
+universal safety standard. The project manager should determine the acceptable
+trade-off between automation, review workload and classification errors. If
+that tolerance changes, a new threshold should be selected from validation data
+using the same coverage-versus-risk procedure, then assessed on independent
+evaluation data. The appropriate operating tolerance will depend upon the
+consequences of incorrect classifications, and the available review capacity /
+cost.
+
+On the measured test workload, the GCN is operationally preferable if the
+benefit of avoiding 1,173 manual reviews outweighs the cost of 10 additional
+incorrectly automated decisions, and the additional computational and
+graph-maintenance requirements. These costs were not measured, so a financial
+benefit cannot be established at this stage.
+
+Before production deployment, the proposed policy should be tested on new
+Facebook page data; particularly if the pattern of connections between pages
+changes, since the GCN relies on these connections when making predictions.
+Accepted predictions should also be sampled for error auditing, with particular
+attention paid to highly confident failures. The confidence threshold should be
+reviewed if error rates among accepted predictions increase, too many
+predictions require manual review, or the cost of reviewing them changes.
+
+Based on this prototype, the GCN achieves substantially higher accuracy and
+more than double the acceptance coverage at a similarly low error rate.
+**Provided its additional computational and maintenance costs are acceptable in
+practice, these advantages justify choosing the GCN over the MLP.**
+
 ## 9. Usage and Reproducibility
+
 ### 9.1 Dependencies and Exact Versions
 
 The implementation was developed using Python 3.12 and PyTorch Geometric
