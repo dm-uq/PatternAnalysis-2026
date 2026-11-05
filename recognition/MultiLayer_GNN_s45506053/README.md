@@ -1162,30 +1162,48 @@ existing report sections. I reviewed and refined the text and diagram for
 accuracy and consistency with the project. Context: The material in this
 section is derived from my pre-existing README section.
 
+Provided a revised drafts Sections 12 (References) and based on my completed
+project code and notebooks. These were adopted for use after I had reviewed and
+refined the redraft for accuracy and consistency with the implemented project
+workflow, and performed some correction of the referencing formats.
+
 ## 12. References
 
-1. B. Rozemberczki, C. Allen and R. Sarkar,
-   "Multi-scale Attributed Node Embedding", 2019.
+1. B. Rozemberczki, C. Allen and R. Sarkar, "Multi-scale attributed node embedding," *Journal of Complex Networks*, vol. 9, no. 2, 2021.
+   https://doi.org/10.1093/comnet/cnab014
 
 2. Facebook Page-Page dataset preparation repository:
    https://github.com/gayanku/facebook_page-page_dataset
 
-3. PyTorch Geometric documentation:
-   FacebookPagePage dataset.
+3. PyTorch Geometric documentation, `FacebookPagePage` dataset:
+   https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.datasets.FacebookPagePage.html
 
-4. PyTorch Geometric tutorial:
-   Node Classification with Graph Neural Networks.
+4. PyTorch Geometric, "Node Classification with Graph Neural Networks," *Colab Notebooks and Video Tutorials*:
+   https://pytorch-geometric.readthedocs.io/en/latest/notes/colabs.html
 
-5. PyTorch Geometric tutorial:
-   Dataset Splitting.
+5. PyTorch Geometric, "Dataset Splitting":
+   https://pytorch-geometric.readthedocs.io/en/latest/tutorial/dataset_splitting.html
 
-6. R. El-Yaniv and Y. Wiener,
-   "On the Foundations of Noise-Free Selective Classification",
-   Journal of Machine Learning Research, 2010.
+6. R. El-Yaniv and Y. Wiener, "On the Foundations of Noise-Free Selective Classification," *Journal of Machine Learning Research*, vol. 11, pp. 1605–1641, 2010.
+   https://www.jmlr.org/papers/v11/el-yaniv10a.html
 
-7. Y. Geifman and R. El-Yaniv,
-   "Selective Classification for Deep Neural Networks",
-   Advances in Neural Information Processing Systems, 2017.
+7. Y. Geifman and R. El-Yaniv, "Selective Classification for Deep Neural Networks," *Advances in Neural Information Processing Systems*, 2017.
+   https://papers.nips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html
 
-8. Meta,
-   "How We Review Content", 2020.
+8. J. King and K. Gotimer, "How We Review Content," Facebook, 2020.
+   https://about.fb.com/news/2020/08/how-we-review-content/
+
+9. T. N. Kipf and M. Welling, "Semi-Supervised Classification with Graph Convolutional Networks," *International Conference on Learning Representations (ICLR)*, 2017.
+   https://arxiv.org/abs/1609.02907
+
+10. L. McInnes, J. Healy and J. Melville, "UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction," *arXiv:1802.03426*, 2018.
+    https://arxiv.org/abs/1802.03426
+
+11. PyTorch documentation, "Build the Neural Network":
+    https://docs.pytorch.org/tutorials/beginner/basics/buildmodel_tutorial.html
+
+12. PyTorch documentation, "CUDA Semantics":
+    https://docs.pytorch.org/docs/stable/notes/cuda.html
+
+13. PyTorch Geometric documentation, `GCNConv`:
+    https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv.GCNConv.html
