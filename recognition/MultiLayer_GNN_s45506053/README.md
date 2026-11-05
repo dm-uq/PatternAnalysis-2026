@@ -810,22 +810,151 @@ practice, these advantages justify choosing the GCN over the MLP.**
 
 ### 9.1 Dependencies and Exact Versions
 
-The implementation was developed using Python 3.12 and PyTorch Geometric
-2.8.0.post1.<br>
-Exact package versions used for the reported experiments are provided below /
-in the accompanying environment specification.
+The project was developed and evaluated using Python 3.12.13 in a Conda
+environment, with the following installed package versions:
+
+| Package             | Version        |
+|---------------------|----------------|
+| PyTorch             | `2.13.0+cu126` |
+| TorchVision         | `0.28.0+cu126` |
+| PyTorch Geometric   | `2.8.0.post1`  |
+| NumPy               | `2.5.1`        |
+| scikit-learn        | `1.9.0`        |
+| Matplotlib          | `3.11.1`       |
+| Seaborn             | `0.13.2`       |
+| UMAP (`umap-learn`) | `0.5.12`       |
+
+The recorded PyTorch installation uses CUDA 12.6. The project supports CPU
+inference, although the reported GPU profiling results were obtained using an
+NVIDIA GeForce GTX 950M.
 
 ### 9.2 Training
+
+The original `facebook.npz` archive is obtained from the course-linked dataset
+repository (Reference 2) and placed at `data/source/facebook.npz`.
+
+From the project directory, run:
+
+```bash
+python prepare_facebook_data.py
+```
+
+This one-time conversion creates the raw file layout and array schema required
+by PyTorch Geometric's `FacebookPagePage` loader, saving the converted archive
+at `data/FacebookPagePage/raw/facebook.npz`. Subsequent dataset loading and
+construction of the reproducible stratified 60/20/20 node split (seed 808) are
+handled by `dataset.py`.
+
+Model training is performed through the experiment notebooks, using the
+reusable functions in `train.py`. The final configurations were selected in:
+
+- `04_mlp_tuning.ipynb`: three-layer MLP, saved as `checkpoints/mlp_wd5e4.pt`.
+- `05_gcn_tuning.ipynb`: four-layer GCN, saved as `checkpoints/gcn_wd5e5.pt`.
+
+Both checkpoints contain the model states with minimum validation loss. For
+final evaluation, these selected states were retained as
+`checkpoints/mlp_final.pt` and `checkpoints/gcn_final.pt`, respectively.
+
 ### 9.3 Prediction / Evaluation
+
+Once the prepared dataset and both final checkpoints are available, the
+standalone prediction script can be run from the project directory:
+
+```bash
+python predict.py
+```
+
+The script loads both frozen models, reconstructs the original data split,
+performs inference and reports held-out test classification metrics and
+confusion matrices. It also measures inference resources and generates the MLP
+and GCN UMAP visualisations in `images/evaluation/`.
+
+The accompanying `06_final_evaluation.ipynb` provides the extended analysis,
+including validation-selected confidence thresholds, reject-option results and
+representative failure-case investigations.
+
 ### 9.4 Example Inputs and Outputs
+
+The prediction script uses the prepared Facebook Page-Page graph rather than
+requiring manual input. Its inputs include the 128-dimensional node features,
+graph connectivity and the saved model checkpoints.
+
+The following summarises the expected classification output for the selected
+final models:
+
+```text
+MLP Aggregate Test Results
+Accuracy:          82.24%
+Macro F1:          80.37%
+Macro AUROC:       95.49%
+
+GCN Aggregate Test Results
+Accuracy:          95.26%
+Macro F1:          94.95%
+Macro AUROC:       99.25%
+```
+
+The complete output additionally includes per-class metrics,
+confusion matrices, profiling results and the generated embedding plots.
+
 ### 9.5 Reproducing Results
 
-When starting from the course-linked `facebook.npz` archive,
-`prepare_facebook_data.py` must be run once to create the raw file layout and
-array schema expected by PyG's `FacebookPagePage` loader. Subsequent loading
-and preprocessing are performed through `dataset.py`.
+The repository contains the project code, experiment notebooks with recorded
+results, and the UMAP figures included in this README. The original dataset,
+generated experiment results and trained model checkpoints are excluded from
+Git.
+
+Reproducing the full workflow therefore requires obtaining and preparing the
+source dataset, running the relevant training notebooks to regenerate the
+selected checkpoints, and then executing `predict.py` or
+`06_final_evaluation.ipynb`.
+
+The fixed node split and recorded model configurations support reproduction of
+the experiment. However, exact training outcomes and execution timings may vary
+with hardware, library versions and numerical execution behaviour.
 
 ## 10. Repository Structure
+
+The repository is organised around six experiment notebooks, reusable Python
+modules, and the figures included in this report.
+
+```text
+MultiLayer_GNN_s45506053/
+├── README.md
+│
+├── 01_data_pipeline.ipynb
+├── 02_baseline_experiments.ipynb
+├── 03_gnn_experiments.ipynb
+├── 04_mlp_tuning.ipynb
+├── 05_gcn_tuning.ipynb
+├── 06_final_evaluation.ipynb
+│
+├── prepare_facebook_data.py
+├── dataset.py
+├── modules.py
+├── train.py
+├── predict.py
+├── confidence.py
+├── profiling.py
+├── visualisation.py
+│
+└── images/
+    └── evaluation/
+        ├── mlp_final_umap.png
+        └── gcn_final_umap.png
+```
+
+The notebooks document the progression from data inspection and initial
+experiments through model tuning and final evaluation.
+
+The Python modules separate dataset preparation, model definitions, training,
+inference, confidence analysis, resource profiling and visualisation.
+The standalone `predict.py` script provides the main executable demonstration
+of the frozen models.
+
+Local `data/`, `checkpoints/` and `results/` directories are used during
+experimentation but are not included in the repository. Only the two UMAP
+figures required by the README are tracked under `images/`.
 
 ## 11. Artificial Intelligence Usage Disclosure
 
@@ -961,6 +1090,12 @@ notebook and presented them in Markdown table format, for expediency. These
 were adopted for Section 6 of the README after manual verification of all
 'transcribed' values and some correction of the table formatting to improve
 presentation.
+
+Provided initial drafts for README Sections 9 (Usage and Reproducibility) and
+10 (Repository Structure), based on my completed project code and notebooks,
+supplied environment versions, and Git-tracked file listing. These were adopted
+for use after I had reviewed and refined the drafts for accuracy and
+consistency with the implemented project workflow.
 
 ## 12. References
 
