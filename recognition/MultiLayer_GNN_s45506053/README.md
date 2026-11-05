@@ -5,8 +5,66 @@
 ## 1. Project Overview
 
 ### 1.1 Problem and Intended User
+
+This project investigates the classification of public Facebook pages into four
+categories: television show, government, company and politician. The intended
+user is a social-network analyst or reviewer who needs to classify pages
+efficiently while identifying uncertain cases that may require closer
+examination.
+
+The project compares a feature-only Multi-Layer Perceptron (MLP) with a Graph
+Convolutional Network (GCN), which additionally uses connections between
+Facebook pages. The main objective is to determine whether the GCN's improved
+classification performance and potential reduction in manual review justify its
+additional computational cost and complexity.
+
 ### 1.2 Algorithm / Working Principle
+
+The Facebook Large Page-Page Network contains 22,470 nodes, each with
+128-dimensional features, and 342,004 stored edge entries. A reproducible
+stratified 60/20/20 split (seed 808) separates nodes into training, validation
+and test sets.
+
+The MLP classifies pages using their node features alone. In contrast, the GCN
+applies successive graph-convolution layers to combine each node's features
+with information from connected nodes. The final selected architectures are a
+three-layer MLP and a four-layer GCN, each independently tuned using validation
+results.
+
+Both models are evaluated on the held-out test set using classification
+metrics, prediction confidence and computational resource measurements. A
+confidence-based reject-option rule is also investigated, where predictions
+above a validation-selected threshold are accepted automatically and
+lower-confidence predictions are referred for human review.
+
 ### 1.3 Project Figure / Overview Diagram
+
+The following diagram summarises the main stages of the project, from data
+preparation and model training through to evaluation and confidence-based
+classification.
+
+```mermaid
+flowchart TD
+    A["Facebook Page-Page Network<br/>Node features and graph connections"]
+    B["Stratified train / validation / test split<br/>60 / 20 / 20"]
+    C["MLP<br/>3 layers, features only"]
+    D["GCN<br/>4 layers, features and connections"]
+    E["Validation-based model selection<br/>and confidence thresholds"]
+    F["Held-out test evaluation<br/>Classification, confidence and profiling"]
+    G["Accept high-confidence predictions<br/>Refer other cases for human review"]
+
+    A --> B
+    B --> C
+    B --> D
+    C --> E
+    D --> E
+    E --> F
+    F --> G
+```
+
+The comparison assesses both classification performance and the practical
+trade-off between automated coverage, classification errors and the additional
+computational cost of graph-based inference.
 
 ## 2. Feasibility Review
 
@@ -1096,6 +1154,12 @@ Provided initial drafts for README Sections 9 (Usage and Reproducibility) and
 supplied environment versions, and Git-tracked file listing. These were adopted
 for use after I had reviewed and refined the drafts for accuracy and
 consistency with the implemented project workflow.
+
+Provided an initial draft for README Section 1 (Project Overview), including a
+Mermaid overview diagram, based on my completed project implementation and
+existing report sections. I reviewed and refined the text and diagram for
+accuracy and consistency with the project. Context: The material in this
+section is derived from my pre-existing README section.
 
 ## 12. References
 
